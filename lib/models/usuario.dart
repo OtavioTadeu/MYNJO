@@ -10,7 +10,6 @@ class Usuario {
   });
 }
 
-// Lista de usuários cadastrados em memória para testes e persistência durante a execução
 final List<Usuario> usuariosCadastrados = [
   Usuario(
     nome: 'Usuário Teste',
