@@ -3,7 +3,10 @@ import '../models/moeda.dart';
 import '../models/transacao.dart';
 import '../models/usuario.dart';
 import '../theme/app_colors.dart';
+import 'extrato_lancamento.dart';
+import 'lancamento.dart';
 import 'login.dart';
+import 'relatorio.dart';
 
 class TelaInicio extends StatefulWidget {
   final Usuario? usuario;
@@ -83,15 +86,40 @@ class _TelaInicioState extends State<TelaInicio> {
     }
   }
 
-  void _acaoRapida(String tipo) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Ação "$tipo" selecionada. A tela de Lançamentos será integrada em breve!'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
+  void _abrirLancamento([TipoTransacao? tipo]) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TelaLancamento(tipoInicial: tipo),
       ),
     );
+    setState(() {
+      _transacoes = List.from(transacoesExemplo);
+    });
+  }
+
+  void _abrirExtrato() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TelaExtratoLancamento(),
+      ),
+    );
+    setState(() {
+      _transacoes = List.from(transacoesExemplo);
+    });
+  }
+
+  void _abrirRelatorio() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TelaRelatorio(),
+      ),
+    );
+    setState(() {
+      _transacoes = List.from(transacoesExemplo);
+    });
   }
 
   void _confirmarLogout() {
@@ -161,6 +189,16 @@ class _TelaInicioState extends State<TelaInicio> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Extrato',
+            icon: const Icon(Icons.receipt_long_rounded, color: AppColors.textSecondary),
+            onPressed: _abrirExtrato,
+          ),
+          IconButton(
+            tooltip: 'Relatório',
+            icon: const Icon(Icons.pie_chart_outline_rounded, color: AppColors.textSecondary),
+            onPressed: _abrirRelatorio,
+          ),
           IconButton(
             tooltip: 'Sair da conta',
             icon: const Icon(Icons.logout_rounded, color: AppColors.textSecondary),
@@ -318,7 +356,7 @@ class _TelaInicioState extends State<TelaInicio> {
                   icon: Icons.south_west_rounded,
                   corIcon: AppColors.income,
                   fundoIcon: AppColors.incomeLight,
-                  onTap: () => _acaoRapida('Nova Entrada'),
+                  onTap: () => _abrirLancamento(TipoTransacao.entrada),
                 ),
                 const SizedBox(width: 12),
                 _buildAcaoRapida(
@@ -326,7 +364,7 @@ class _TelaInicioState extends State<TelaInicio> {
                   icon: Icons.north_east_rounded,
                   corIcon: AppColors.expense,
                   fundoIcon: AppColors.expenseLight,
-                  onTap: () => _acaoRapida('Nova Saída'),
+                  onTap: () => _abrirLancamento(TipoTransacao.saida),
                 ),
                 const SizedBox(width: 12),
                 _buildAcaoRapida(
@@ -334,7 +372,7 @@ class _TelaInicioState extends State<TelaInicio> {
                   icon: Icons.repeat_rounded,
                   corIcon: AppColors.fixed,
                   fundoIcon: AppColors.fixedLight,
-                  onTap: () => _acaoRapida('Novo Gasto Fixo'),
+                  onTap: () => _abrirLancamento(TipoTransacao.fixo),
                 ),
               ],
             ),
@@ -390,16 +428,19 @@ class _TelaInicioState extends State<TelaInicio> {
                               moeda.bandeira,
                               style: const TextStyle(fontSize: 20),
                             ),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  moeda.favorita = !moeda.favorita;
-                                });
-                              },
-                              child: Icon(
-                                moeda.favorita ? Icons.star_rounded : Icons.star_outline_rounded,
-                                color: moeda.favorita ? AppColors.starGold : AppColors.textMuted,
-                                size: 18,
+                            MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    moeda.favorita = !moeda.favorita;
+                                  });
+                                },
+                                child: Icon(
+                                  moeda.favorita ? Icons.star_rounded : Icons.star_outline_rounded,
+                                  color: moeda.favorita ? AppColors.starGold : AppColors.textMuted,
+                                  size: 18,
+                                ),
                               ),
                             ),
                           ],
@@ -462,13 +503,9 @@ class _TelaInicioState extends State<TelaInicio> {
                     color: AppColors.textPrimary,
                   ),
                 ),
-                Text(
-                  '${_transacoes.length} transações',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
+                TextButton(
+                  onPressed: _abrirExtrato,
+                  child: Text('Ver todos (${_transacoes.length})'),
                 ),
               ],
             ),
@@ -583,6 +620,12 @@ class _TelaInicioState extends State<TelaInicio> {
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _abrirLancamento(),
+        tooltip: 'Novo lançamento',
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
     );
   }
 
@@ -594,36 +637,39 @@ class _TelaInicioState extends State<TelaInicio> {
     required VoidCallback onTap,
   }) {
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: AppColors.cardShadow,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: fundoIcon,
-                  borderRadius: BorderRadius.circular(12),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: AppColors.cardShadow,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: fundoIcon,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: corIcon, size: 20),
                 ),
-                child: Icon(icon, color: corIcon, size: 20),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
