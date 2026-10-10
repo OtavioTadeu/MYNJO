@@ -3,6 +3,7 @@ import '../models/moeda.dart';
 import '../models/transacao.dart';
 import '../models/usuario.dart';
 import '../theme/app_colors.dart';
+import '../utils/app_dimensions.dart';
 import 'extrato_lancamento.dart';
 import 'lancamento.dart';
 import 'login.dart';
@@ -18,7 +19,7 @@ class TelaInicio extends StatefulWidget {
 }
 
 class _TelaInicioState extends State<TelaInicio> {
-  bool _ocultarSaldo = false;
+  bool _ocultarSaldo = true;
   late List<Transacao> _transacoes;
   late List<MoedaCotacao> _moedas;
 
@@ -208,7 +209,10 @@ class _TelaInicioState extends State<TelaInicio> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppDimensions.paddingHorizontal(context),
+          vertical: 10,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

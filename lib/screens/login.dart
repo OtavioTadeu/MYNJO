@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/usuario.dart';
 import '../theme/app_colors.dart';
+import '../utils/app_dimensions.dart';
 import 'cadastro.dart';
 import 'inicio.dart';
 
@@ -100,12 +101,17 @@ class _TelaLoginState extends State<TelaLogin> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom; // Padding de 10% para telas com mais de 425 pixels lógico de largura
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
-        padding: EdgeInsets.only(bottom: bottomInset > 0 ? bottomInset + 20 : 32),
+        padding: EdgeInsets.only(
+          bottom: bottomInset > 0 ? bottomInset + 20 : 32,) +
+
+          EdgeInsets.symmetric(
+            horizontal: AppDimensions.paddingHorizontal(context), //Padding horizontal
+          ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
