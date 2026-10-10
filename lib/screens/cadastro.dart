@@ -1,6 +1,16 @@
 import 'package:flutter/material.dart';
+import '../components/botao_principal.dart';
+import '../components/cabecalho_gradiente.dart';
+import '../components/campo_email.dart';
+import '../components/campo_senha.dart';
+import '../components/cartao_branco.dart';
+import '../components/mensagens.dart';
 import '../models/usuario.dart';
 import '../theme/app_colors.dart';
+
+// Marcus Vinicius
+// Otavio Tadeu
+// Natan Silva
 
 class TelaCadastro extends StatefulWidget {
   const TelaCadastro({super.key});
@@ -10,167 +20,91 @@ class TelaCadastro extends StatefulWidget {
 }
 
 class _TelaCadastroState extends State<TelaCadastro> {
-  final _formKey = GlobalKey<FormState>();
+  final formKey = GlobalKey<FormState>();
 
-  final _nomeController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _senhaController = TextEditingController();
-  final _confirmaSenhaController = TextEditingController();
+  final nomeController = TextEditingController();
+  final emailController = TextEditingController();
+  final senhaController = TextEditingController();
+  final confirmaSenhaController = TextEditingController();
 
-  bool _obscureSenha = true;
-  bool _obscureConfirmaSenha = true;
-  bool _isLoading = false;
-
-  final _emailRegEx = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+  bool carregando = false;
 
   @override
   void dispose() {
-    _nomeController.dispose();
-    _emailController.dispose();
-    _senhaController.dispose();
-    _confirmaSenhaController.dispose();
+    nomeController.dispose();
+    emailController.dispose();
+    senhaController.dispose();
+    confirmaSenhaController.dispose();
     super.dispose();
   }
 
-  void _cadastrar() {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isLoading = true);
-
-      final email = _emailController.text.trim();
-
-      Future.delayed(const Duration(milliseconds: 400), () {
-        if (!mounted) return;
-        setState(() => _isLoading = false);
-
-        final jaExiste = usuariosCadastrados.any(
-          (u) => u.email.toLowerCase() == email.toLowerCase(),
-        );
-
-        if (jaExiste) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 10),
-                  Text('Este e-mail já está cadastrado!'),
-                ],
-              ),
-              backgroundColor: AppColors.expense,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
-          return;
-        }
-
-        usuariosCadastrados.add(
-          Usuario(
-            nome: _nomeController.text.trim(),
-            email: email,
-            senha: _senhaController.text,
-          ),
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                SizedBox(width: 10),
-                Text('Cadastro realizado com sucesso! Faça seu login.'),
-              ],
-            ),
-            backgroundColor: AppColors.income,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-
-        Navigator.pop(context);
-      });
+  // Verifica se já existe alguém com esse e-mail
+  bool emailJaCadastrado(String email) {
+    for (Usuario usuario in usuariosCadastrados) {
+      if (usuario.email.toLowerCase() == email.toLowerCase()) {
+        return true;
+      }
     }
+    return false;
+  }
+
+  void cadastrar() async {
+    if (!formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      carregando = true;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+
+    setState(() {
+      carregando = false;
+    });
+
+    String email = emailController.text.trim();
+
+    if (emailJaCadastrado(email)) {
+      mostrarMensagemErro(context, 'Este e-mail já está cadastrado!');
+      return;
+    }
+
+    Usuario novoUsuario = Usuario(
+      nome: nomeController.text.trim(),
+      email: email,
+      senha: senhaController.text,
+    );
+    usuariosCadastrados.add(novoUsuario);
+
+    mostrarMensagemSucesso(context, 'Cadastro realizado com sucesso! Faça seu login.');
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
-        padding: EdgeInsets.only(bottom: bottomInset > 0 ? bottomInset + 20 : 32),
+        padding: const EdgeInsets.only(bottom: 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              decoration: const BoxDecoration(
-                gradient: AppColors.heroGradient,
-                borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(38),
-                ),
-              ),
-              padding: const EdgeInsets.only(
-                left: 20,
-                top: 52,
-                right: 24,
-                bottom: 48,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    padding: EdgeInsets.zero,
-                    alignment: Alignment.centerLeft,
-                    icon: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Criar Conta',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Crie sua conta em poucos segundos.',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
-              ),
+            const CabecalhoGradiente(
+              titulo: 'Criar Conta',
+              subtitulo: 'Crie sua conta em poucos segundos.',
+              mostrarBotaoVoltar: true,
             ),
             Transform.translate(
               offset: const Offset(0, -22),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.card,
-                    borderRadius: BorderRadius.circular(22),
-                    boxShadow: AppColors.cardShadow,
-                  ),
+                child: CartaoBranco(
+                  arredondamento: 22,
                   padding: const EdgeInsets.all(22),
                   child: Form(
-                    key: _formKey,
+                    key: formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -185,14 +119,11 @@ class _TelaCadastroState extends State<TelaCadastro> {
                         const SizedBox(height: 4),
                         const Text(
                           'Todos os campos são obrigatórios',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: 22),
                         TextFormField(
-                          controller: _nomeController,
+                          controller: nomeController,
                           decoration: const InputDecoration(
                             labelText: 'Nome completo',
                             hintText: 'Seu nome',
@@ -209,44 +140,10 @@ class _TelaCadastroState extends State<TelaCadastro> {
                           },
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
-                            labelText: 'E-mail',
-                            hintText: 'voce@email.com',
-                            prefixIcon: Icon(Icons.alternate_email_rounded, size: 20),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Digite seu e-mail';
-                            }
-                            if (!_emailRegEx.hasMatch(value.trim())) {
-                              return 'E-mail inválido';
-                            }
-                            return null;
-                          },
-                        ),
+                        CampoEmail(controller: emailController),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _senhaController,
-                          obscureText: _obscureSenha,
-                          decoration: InputDecoration(
-                            labelText: 'Senha',
-                            hintText: '••••••',
-                            prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscureSenha
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                                size: 20,
-                              ),
-                              onPressed: () {
-                                setState(() => _obscureSenha = !_obscureSenha);
-                              },
-                            ),
-                          ),
+                        CampoSenha(
+                          controller: senhaController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Digite uma senha';
@@ -258,54 +155,25 @@ class _TelaCadastroState extends State<TelaCadastro> {
                           },
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _confirmaSenhaController,
-                          obscureText: _obscureConfirmaSenha,
-                          decoration: InputDecoration(
-                            labelText: 'Confirmar Senha',
-                            hintText: '••••••',
-                            prefixIcon: const Icon(Icons.lock_reset_rounded, size: 20),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscureConfirmaSenha
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                                size: 20,
-                              ),
-                              onPressed: () {
-                                setState(() => _obscureConfirmaSenha = !_obscureConfirmaSenha);
-                              },
-                            ),
-                          ),
+                        CampoSenha(
+                          controller: confirmaSenhaController,
+                          label: 'Confirmar Senha',
+                          icone: Icons.lock_reset_rounded,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Confirme sua senha';
                             }
-                            if (value != _senhaController.text) {
+                            if (value != senhaController.text) {
                               return 'As senhas não coincidem';
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 24),
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: AppColors.fabShadow,
-                          ),
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _cadastrar,
-                            child: _isLoading
-                                ? const SizedBox(
-                                    height: 22,
-                                    width: 22,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2.4,
-                                    ),
-                                  )
-                                : const Text('Criar Minha Conta'),
-                          ),
+                        BotaoPrincipal(
+                          texto: 'Criar Minha Conta',
+                          carregando: carregando,
+                          onPressed: cadastrar,
                         ),
                         const SizedBox(height: 16),
                         Row(
@@ -313,16 +181,12 @@ class _TelaCadastroState extends State<TelaCadastro> {
                           children: [
                             const Text(
                               'Já possui uma conta?',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
+                              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                             ),
                             TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                              ),
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
                               child: const Text('Entrar'),
                             ),
                           ],

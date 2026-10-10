@@ -1,3 +1,6 @@
+// Joao Felix
+// Yuri Stiwart
+
 class MoedaCotacao {
   final String codigo;
   final String nome;

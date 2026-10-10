@@ -1,7 +1,8 @@
+// Otavio Tadeu
 class Usuario {
-  final String nome;
-  final String email;
-  final String senha;
+  String nome;
+  String email;
+  String senha;
 
   Usuario({
     required this.nome,

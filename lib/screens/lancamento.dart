@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
+import '../components/botao_principal.dart';
+import '../components/mensagens.dart';
 import '../models/transacao.dart';
+import '../utils/formatadores.dart';
+
+// Marcus Vinicius
+// Otavio Tadeu
 
 class TelaLancamento extends StatefulWidget {
   final TipoTransacao? tipoInicial;
@@ -35,30 +41,28 @@ class _TelaLancamentoState extends State<TelaLancamento> {
   }
 
   void _salvarLancamento() {
-    if (_formKey.currentState?.validate() ?? false) {
-      final valorTexto = _valorController.text.trim().replaceAll(',', '.');
-      final valor = double.tryParse(valorTexto) ?? 0.0;
-
-      final novaTransacao = Transacao(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        tipo: _tipoSelecionado,
-        descricao: _descricaoController.text.trim(),
-        valor: valor,
-        categoria: _categoriaSelecionada,
-        data: _dataSelecionada,
-      );
-
-      transacoesExemplo.insert(0, novaTransacao);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Lançamento salvo com sucesso!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      Navigator.pop(context, novaTransacao);
+    if (!_formKey.currentState!.validate()) {
+      return;
     }
+
+    // troca a vírgula por ponto para o Dart entender o número
+    String valorTexto = _valorController.text.trim().replaceAll(',', '.');
+    double valor = double.parse(valorTexto);
+
+    Transacao novaTransacao = Transacao(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      tipo: _tipoSelecionado,
+      descricao: _descricaoController.text.trim(),
+      valor: valor,
+      categoria: _categoriaSelecionada,
+      data: _dataSelecionada,
+    );
+
+    // coloca no começo da lista para aparecer primeiro
+    transacoesExemplo.insert(0, novaTransacao);
+
+    mostrarMensagemSucesso(context, 'Lançamento salvo com sucesso!');
+    Navigator.pop(context, novaTransacao);
   }
 
   void _selecionarData() async {
@@ -179,9 +183,7 @@ class _TelaLancamentoState extends State<TelaLancamento> {
                   child: ListTile(
                     leading: const Icon(Icons.calendar_today),
                     title: const Text('Data'),
-                    subtitle: Text(
-                      '${_dataSelecionada.day.toString().padLeft(2, '0')}/${_dataSelecionada.month.toString().padLeft(2, '0')}/${_dataSelecionada.year}',
-                    ),
+                    subtitle: Text(formatarDataCompleta(_dataSelecionada)),
                     trailing: TextButton(
                       onPressed: _selecionarData,
                       child: const Text('Alterar'),
@@ -189,9 +191,9 @@ class _TelaLancamentoState extends State<TelaLancamento> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton(
+                BotaoPrincipal(
+                  texto: 'Salvar Lançamento',
                   onPressed: _salvarLancamento,
-                  child: const Text('Salvar Lançamento'),
                 ),
               ],
             ),
