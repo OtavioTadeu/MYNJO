@@ -4,7 +4,7 @@ import '../components/cabecalho_gradiente.dart';
 import '../components/campo_email.dart';
 import '../components/campo_senha.dart';
 import '../components/cartao_branco.dart';
-import '../utils/app_dimensions.dart';
+import '../utils/dimensoes_tela.dart';
 import '../components/mensagens.dart';
 import '../models/usuario.dart';
 import '../theme/app_colors.dart';

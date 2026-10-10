@@ -6,7 +6,7 @@ import '../components/mensagens.dart';
 import '../models/preferencias.dart';
 import '../models/transacao.dart';
 import '../theme/app_colors.dart';
-import '../utils/app_dimensions.dart';
+import '../utils/dimensoes_tela.dart';
 import 'lancamento.dart';
 
 // Marcus Vinicius
@@ -92,10 +92,11 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
       ),
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // ===== Filtros =====
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppDimensions.paddingHorizontal(context), vertical: 10),
+              padding: EdgeInsets.all(10),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -152,6 +153,7 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
 
             // ===== Lista =====
             Expanded(
+              
               child: lista.isEmpty ? listaVazia() : listaDeTransacoes(lista),
             ),
           ],
@@ -168,7 +170,8 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
 
   Widget listaDeTransacoes(List<Transacao> lista) {
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+      padding: const EdgeInsets.only(top: 16, bottom: 80) +
+          EdgeInsets.symmetric(horizontal: AppDimensions.paddingHorizontal(context)),
       itemCount: lista.length,
       separatorBuilder: (context, index) => const SizedBox(height: 10),
       itemBuilder: (context, index) {

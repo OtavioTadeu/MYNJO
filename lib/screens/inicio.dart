@@ -9,7 +9,7 @@ import '../models/preferencias.dart';
 import '../models/transacao.dart';
 import '../models/usuario.dart';
 import '../theme/app_colors.dart';
-import '../utils/app_dimensions.dart';
+import '../utils/dimensoes_tela.dart';
 import '../utils/formatadores.dart';
 import 'extrato_lancamento.dart';
 import 'lancamento.dart';
@@ -29,10 +29,9 @@ class TelaInicio extends StatefulWidget {
 }
 
 class _TelaInicioState extends State<TelaInicio> {
-  bool _ocultarSaldo = true;
   late List<Transacao> _transacoes;
   late List<MoedaCotacao> _moedas;
-  bool ocultarSaldo = false;
+  bool ocultarSaldo = true;
 
   @override
   void initState() {

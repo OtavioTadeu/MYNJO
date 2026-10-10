@@ -7,7 +7,7 @@ import '../models/preferencias.dart';
 import '../models/transacao.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatadores.dart';
-import '../utils/app_dimensions.dart';
+import '../utils/dimensoes_tela.dart';
 
 // Marcus Vinicius
 // Otavio Tadeu
@@ -165,14 +165,15 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+          padding: const EdgeInsets.only(top: 16, bottom: 32) +
+              EdgeInsets.symmetric(horizontal: AppDimensions.paddingHorizontal(context)),
           children: [
             // ===== Resumo Geral =====
             const TituloSecao(titulo: 'Resumo Geral'),
             const SizedBox(height: 10),
             CartaoBranco(
               arredondamento: 20,
-              padding: EdgeInsets.symmetric(horizontal: AppDimensions.paddingHorizontal(context), vertical: 16),
+              padding: EdgeInsets.all(16),
               child: Column(
                 children: [
                   _itemResumo(

@@ -10,7 +10,7 @@ import '../components/titulo_secao.dart';
 import '../models/moeda.dart';
 import '../models/preferencias.dart';
 import '../models/usuario.dart';
-import '../utils/app_dimensions.dart';
+import '../utils/dimensoes_tela.dart';
 import '../theme/app_colors.dart';
 import 'login.dart';
 

@@ -7,7 +7,7 @@ import '../components/cartao_branco.dart';
 import '../components/mensagens.dart';
 import '../models/usuario.dart';
 import '../theme/app_colors.dart';
-import '../utils/app_dimensions.dart';
+import '../utils/dimensoes_tela.dart';
 import 'cadastro.dart';
 import 'inicio.dart';
 

@@ -3,7 +3,7 @@ import '../components/botao_principal.dart';
 import '../components/mensagens.dart';
 import '../models/transacao.dart';
 import '../utils/formatadores.dart';
-import '../utils/app_dimensions.dart';
+import '../utils/dimensoes_tela.dart';
 
 // Marcus Vinicius
 // Otavio Tadeu
