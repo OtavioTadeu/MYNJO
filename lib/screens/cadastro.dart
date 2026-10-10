@@ -4,6 +4,7 @@ import '../components/cabecalho_gradiente.dart';
 import '../components/campo_email.dart';
 import '../components/campo_senha.dart';
 import '../components/cartao_branco.dart';
+import '../utils/app_dimensions.dart';
 import '../components/mensagens.dart';
 import '../models/usuario.dart';
 import '../theme/app_colors.dart';
@@ -102,7 +103,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: CartaoBranco(
                   arredondamento: 22,
-                  padding: const EdgeInsets.all(22),
+                  padding: EdgeInsets.symmetric(vertical: 22, horizontal: AppDimensions.paddingHorizontal(context)),
                   child: Form(
                     key: formKey,
                     child: Column(

@@ -109,7 +109,7 @@ class _TelaLoginState extends State<TelaLogin> {
             Transform.translate(
               offset: const Offset(0, -22),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: EdgeInsets.symmetric(horizontal: AppDimensions.paddingHorizontal(context)), //padding horizontal
                 child: CartaoBranco(
                   arredondamento: 22,
                   padding: const EdgeInsets.all(22),

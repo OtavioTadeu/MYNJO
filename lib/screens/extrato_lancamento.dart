@@ -6,6 +6,7 @@ import '../components/mensagens.dart';
 import '../models/preferencias.dart';
 import '../models/transacao.dart';
 import '../theme/app_colors.dart';
+import '../utils/app_dimensions.dart';
 import 'lancamento.dart';
 
 // Marcus Vinicius
@@ -94,7 +95,7 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
           children: [
             // ===== Filtros =====
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: EdgeInsets.symmetric(horizontal: AppDimensions.paddingHorizontal(context), vertical: 10),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(

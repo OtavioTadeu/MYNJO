@@ -3,6 +3,7 @@ import '../components/botao_principal.dart';
 import '../components/mensagens.dart';
 import '../models/transacao.dart';
 import '../utils/formatadores.dart';
+import '../utils/app_dimensions.dart';
 
 // Marcus Vinicius
 // Otavio Tadeu
@@ -89,7 +90,7 @@ class _TelaLancamentoState extends State<TelaLancamento> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.symmetric(vertical: 16.0, horizontal: AppDimensions.paddingHorizontal(context)),
           child: Form(
             key: _formKey,
             child: Column(

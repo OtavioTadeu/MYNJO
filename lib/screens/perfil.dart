@@ -10,6 +10,7 @@ import '../components/titulo_secao.dart';
 import '../models/moeda.dart';
 import '../models/preferencias.dart';
 import '../models/usuario.dart';
+import '../utils/app_dimensions.dart';
 import '../theme/app_colors.dart';
 import 'login.dart';
 
@@ -134,7 +135,8 @@ class _TelaPerfilState extends State<TelaPerfil> {
         title: const Text('Meu Perfil'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
+        padding: const EdgeInsets.only(top: 8, bottom: 32)
+        + EdgeInsets.symmetric(horizontal: AppDimensions.paddingHorizontal(context)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

@@ -7,6 +7,7 @@ import '../models/preferencias.dart';
 import '../models/transacao.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatadores.dart';
+import '../utils/app_dimensions.dart';
 
 // Marcus Vinicius
 // Otavio Tadeu
@@ -171,7 +172,7 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
             const SizedBox(height: 10),
             CartaoBranco(
               arredondamento: 20,
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.symmetric(horizontal: AppDimensions.paddingHorizontal(context), vertical: 16),
               child: Column(
                 children: [
                   _itemResumo(
