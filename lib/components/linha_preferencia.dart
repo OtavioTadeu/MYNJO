@@ -58,7 +58,7 @@ class LinhaPreferencia extends StatelessWidget {
           Switch(
             value: valor,
             onChanged: onChanged,
-            activeThumbColor: Colors.white,
+            activeColor: Colors.white,
             activeTrackColor: AppColors.primary,
           ),
         ],

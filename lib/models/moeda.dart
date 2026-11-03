@@ -17,6 +17,36 @@ class MoedaCotacao {
     required this.variacaoPercentual,
     this.favorita = false,
   });
+
+  MoedaCotacao copyWith({
+    String? codigo,
+    String? nome,
+    String? bandeira,
+    double? valorVenda,
+    double? variacaoPercentual,
+    bool? favorita,
+  }) {
+    return MoedaCotacao(
+      codigo: codigo ?? this.codigo,
+      nome: nome ?? this.nome,
+      bandeira: bandeira ?? this.bandeira,
+      valorVenda: valorVenda ?? this.valorVenda,
+      variacaoPercentual: variacaoPercentual ?? this.variacaoPercentual,
+      favorita: favorita ?? this.favorita,
+    );
+  }
+}
+
+class CotacaoHistorico {
+  final DateTime data;
+  final double valor;
+  final double variacao;
+
+  CotacaoHistorico({
+    required this.data,
+    required this.valor,
+    required this.variacao,
+  });
 }
 
 final List<MoedaCotacao> moedasPadrao = [

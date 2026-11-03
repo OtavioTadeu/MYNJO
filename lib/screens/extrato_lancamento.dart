@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../components/chip_filtro.dart';
 import '../components/dialogo_confirmacao.dart';
 import '../components/item_transacao.dart';
 import '../components/mensagens.dart';
-import '../models/preferencias.dart';
+import '../dados/app_dados.dart';
 import '../models/transacao.dart';
 import '../theme/app_colors.dart';
 import '../utils/dimensoes_tela.dart';
@@ -25,12 +26,12 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
   TipoTransacao? filtro;
 
   // Retorna a lista de acordo com o filtro escolhido
-  List<Transacao> pegarTransacoesFiltradas() {
+  List<Transacao> pegarTransacoesFiltradas(List<Transacao> todas) {
     if (filtro == null) {
-      return transacoesExemplo;
+      return todas;
     }
     List<Transacao> resultado = [];
-    for (Transacao t in transacoesExemplo) {
+    for (Transacao t in todas) {
       if (t.tipo == filtro) {
         resultado.add(t);
       }
@@ -39,9 +40,9 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
   }
 
   // Conta quantas transações existem de um tipo
-  int contarPorTipo(TipoTransacao tipo) {
+  int contarPorTipo(List<Transacao> todas, TipoTransacao tipo) {
     int quantidade = 0;
-    for (Transacao t in transacoesExemplo) {
+    for (Transacao t in todas) {
       if (t.tipo == tipo) {
         quantidade++;
       }
@@ -50,19 +51,21 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
   }
 
   void abrirNovoLancamento() async {
-    await Navigator.push(
+    final novo = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const TelaLancamento()),
     );
-    setState(() {});
+    if (novo is Transacao && mounted) {
+      context.read<AppDados>().adicionarTransacao(novo);
+    }
   }
 
   void excluirTransacao(Transacao transacao) {
+    final dados = context.read<AppDados>();
+
     // se o usuário desativou a confirmação nas preferências, exclui direto
-    if (!preferencias.confirmarAntesDeExcluir) {
-      setState(() {
-        transacoesExemplo.remove(transacao);
-      });
+    if (!dados.preferencias.confirmarAntesDeExcluir) {
+      dados.removerTransacao(transacao.id);
       mostrarMensagemSucesso(context, 'Lançamento excluído com sucesso.');
       return;
     }
@@ -73,9 +76,7 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
       mensagem: 'Deseja realmente excluir "${transacao.descricao}"?',
       textoBotao: 'Excluir',
       aoConfirmar: () {
-        setState(() {
-          transacoesExemplo.remove(transacao);
-        });
+        dados.removerTransacao(transacao.id);
         mostrarMensagemSucesso(context, 'Lançamento excluído com sucesso.');
       },
     );
@@ -83,7 +84,8 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
 
   @override
   Widget build(BuildContext context) {
-    List<Transacao> lista = pegarTransacoesFiltradas();
+    final dados = context.watch<AppDados>();
+    List<Transacao> lista = pegarTransacoesFiltradas(dados.transacoes);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -96,7 +98,7 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
           children: [
             // ===== Filtros =====
             Padding(
-              padding: EdgeInsets.all(10),
+              padding: const EdgeInsets.all(10),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -105,7 +107,7 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
                       texto: 'Todas',
                       selecionado: filtro == null,
                       corAtiva: AppColors.primary,
-                      quantidade: transacoesExemplo.length,
+                      quantidade: dados.transacoes.length,
                       onTap: () {
                         setState(() {
                           filtro = null;
@@ -116,7 +118,8 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
                       texto: 'Entradas',
                       selecionado: filtro == TipoTransacao.entrada,
                       corAtiva: AppColors.income,
-                      quantidade: contarPorTipo(TipoTransacao.entrada),
+                      quantidade:
+                          contarPorTipo(dados.transacoes, TipoTransacao.entrada),
                       onTap: () {
                         setState(() {
                           filtro = TipoTransacao.entrada;
@@ -127,7 +130,8 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
                       texto: 'Saídas',
                       selecionado: filtro == TipoTransacao.saida,
                       corAtiva: AppColors.expense,
-                      quantidade: contarPorTipo(TipoTransacao.saida),
+                      quantidade:
+                          contarPorTipo(dados.transacoes, TipoTransacao.saida),
                       onTap: () {
                         setState(() {
                           filtro = TipoTransacao.saida;
@@ -138,7 +142,8 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
                       texto: 'Fixos',
                       selecionado: filtro == TipoTransacao.fixo,
                       corAtiva: AppColors.fixed,
-                      quantidade: contarPorTipo(TipoTransacao.fixo),
+                      quantidade:
+                          contarPorTipo(dados.transacoes, TipoTransacao.fixo),
                       onTap: () {
                         setState(() {
                           filtro = TipoTransacao.fixo;
@@ -151,9 +156,8 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
             ),
             const Divider(height: 1, color: AppColors.border),
 
-            // ===== Lista =====
+            // ===== Lista dinâmica com ListView.builder =====
             Expanded(
-              
               child: lista.isEmpty ? listaVazia() : listaDeTransacoes(lista),
             ),
           ],
@@ -169,18 +173,21 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
   }
 
   Widget listaDeTransacoes(List<Transacao> lista) {
-    return ListView.separated(
+    return ListView.builder(
       padding: const EdgeInsets.only(top: 16, bottom: 80) +
-          EdgeInsets.symmetric(horizontal: AppDimensions.paddingHorizontal(context)),
+          EdgeInsets.symmetric(
+              horizontal: AppDimensions.paddingHorizontal(context)),
       itemCount: lista.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         Transacao t = lista[index];
-        return ItemTransacao(
-          transacao: t,
-          onExcluir: () {
-            excluirTransacao(t);
-          },
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: ItemTransacao(
+            transacao: t,
+            onExcluir: () {
+              excluirTransacao(t);
+            },
+          ),
         );
       },
     );

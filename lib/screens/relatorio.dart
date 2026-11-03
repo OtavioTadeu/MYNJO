@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../components/cartao_branco.dart';
 import '../components/linha_moeda_favorita.dart';
 import '../components/titulo_secao.dart';
-import '../models/moeda.dart';
-import '../models/preferencias.dart';
+import '../dados/app_dados.dart';
+
 import '../models/transacao.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatadores.dart';
@@ -11,18 +12,6 @@ import '../utils/dimensoes_tela.dart';
 
 // Marcus Vinicius
 // Otavio Tadeu
-
-class CotacaoHistorico {
-  final DateTime data;
-  final double valor;
-  final double variacao;
-
-  CotacaoHistorico({
-    required this.data,
-    required this.valor,
-    required this.variacao,
-  });
-}
 
 class TelaRelatorio extends StatefulWidget {
   const TelaRelatorio({super.key});
@@ -32,113 +21,60 @@ class TelaRelatorio extends StatefulWidget {
 }
 
 class _TelaRelatorioState extends State<TelaRelatorio> {
-  // Começam com os valores escolhidos nas Preferências do app
-  late String _moedaSelecionada;
-  late int _diasPeriodo;
-
-  bool _carregandoCotacoes = false;
-  String? _erroCotacoes;
-  List<CotacaoHistorico> _historicoCotacoes = [];
+  String _moedaSelecionada = 'USD';
+  int _diasPeriodo = 7;
+  bool _inicializado = false;
 
   @override
   void initState() {
     super.initState();
-    _moedaSelecionada = preferencias.moedaPadrao;
-    _diasPeriodo = preferencias.periodoPadrao;
-    _buscarCotacoesPeriodo();
-  }
-
-  // Busca cotações simuladas para o período
-  Future<void> _buscarCotacoesPeriodo() async {
-    setState(() {
-      _carregandoCotacoes = true;
-      _erroCotacoes = null;
-      _historicoCotacoes = [];
-    });
-
-    try {
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      MoedaCotacao moedaBase = moedasPadrao.first;
-      for (MoedaCotacao m in moedasPadrao) {
-        if (m.codigo == _moedaSelecionada) {
-          moedaBase = m;
-          break;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final dados = context.read<AppDados>();
+        if (!_inicializado) {
+          setState(() {
+            _moedaSelecionada = dados.preferencias.moedaPadrao;
+            _diasPeriodo = dados.preferencias.periodoPadrao;
+            _inicializado = true;
+          });
+          dados.carregarHistorico(_moedaSelecionada, _diasPeriodo);
         }
       }
-
-      final hoje = DateTime.now();
-      final List<CotacaoHistorico> lista = [];
-
-      for (int i = 0; i < _diasPeriodo; i++) {
-        final data = hoje.subtract(Duration(days: i));
-        final fator = 1.0 + ((i % 5 - 2) * 0.008);
-        final valor = moedaBase.valorVenda * fator;
-        final variacao = ((i % 5 - 2) * 0.4);
-
-        lista.add(
-          CotacaoHistorico(
-            data: data,
-            valor: valor,
-            variacao: variacao,
-          ),
-        );
-      }
-
-      setState(() {
-        _historicoCotacoes = lista;
-      });
-    } catch (e) {
-      setState(() {
-        _erroCotacoes =
-            'Não foi possível carregar as cotações. Verifique sua conexão e tente novamente.';
-      });
-    } finally {
-      setState(() {
-        _carregandoCotacoes = false;
-      });
-    }
+    });
   }
 
-  double get _totalEntradas {
+  void _buscarCotacoesPeriodo() {
+    context.read<AppDados>().carregarHistorico(_moedaSelecionada, _diasPeriodo);
+  }
+
+  double _calcularTotalEntradas(List<Transacao> transacoes) {
     double total = 0;
-    for (Transacao t in transacoesExemplo) {
-      if (t.isEntrada) {
-        total = total + t.valor;
-      }
+    for (Transacao t in transacoes) {
+      if (t.isEntrada) total += t.valor;
     }
     return total;
   }
 
-  double get _totalSaidas {
+  double _calcularTotalSaidas(List<Transacao> transacoes) {
     double total = 0;
-    for (Transacao t in transacoesExemplo) {
-      if (!t.isEntrada) {
-        total = total + t.valor;
-      }
+    for (Transacao t in transacoes) {
+      if (!t.isEntrada) total += t.valor;
     }
     return total;
   }
 
-  double get _saldoTotal => _totalEntradas - _totalSaidas;
-
-  double get _totalFixos {
+  double _calcularTotalFixos(List<Transacao> transacoes) {
     double total = 0;
-    for (Transacao t in transacoesExemplo) {
-      if (t.isFixo) {
-        total = total + t.valor;
-      }
+    for (Transacao t in transacoes) {
+      if (t.isFixo) total += t.valor;
     }
     return total;
   }
 
-  // Soma quanto foi gasto em cada categoria. Ex: {'Lazer': 64.0, 'Saúde': 87.3}
-  Map<String, double> get _gastosPorCategoria {
+  Map<String, double> _calcularGastosPorCategoria(List<Transacao> transacoes) {
     Map<String, double> mapa = {};
-    for (Transacao t in transacoesExemplo) {
-      if (t.isEntrada) {
-        continue;
-      }
+    for (Transacao t in transacoes) {
+      if (t.isEntrada) continue;
       if (mapa.containsKey(t.categoria)) {
         mapa[t.categoria] = mapa[t.categoria]! + t.valor;
       } else {
@@ -150,12 +86,18 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
 
   @override
   Widget build(BuildContext context) {
-    // ordena do maior gasto para o menor
+    final dados = context.watch<AppDados>();
+
+    final totalEntradas = _calcularTotalEntradas(dados.transacoes);
+    final totalSaidas = _calcularTotalSaidas(dados.transacoes);
+    final saldoTotal = totalEntradas - totalSaidas;
+    final totalFixos = _calcularTotalFixos(dados.transacoes);
+
     List<MapEntry<String, double>> categoriasGastos =
-        _gastosPorCategoria.entries.toList();
+        _calcularGastosPorCategoria(dados.transacoes).entries.toList();
     categoriasGastos.sort((a, b) => b.value.compareTo(a.value));
 
-    final totalDespesas = _totalSaidas;
+    final totalDespesas = totalSaidas;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -166,14 +108,15 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.only(top: 16, bottom: 32) +
-              EdgeInsets.symmetric(horizontal: AppDimensions.paddingHorizontal(context)),
+              EdgeInsets.symmetric(
+                  horizontal: AppDimensions.paddingHorizontal(context)),
           children: [
             // ===== Resumo Geral =====
             const TituloSecao(titulo: 'Resumo Geral'),
             const SizedBox(height: 10),
             CartaoBranco(
               arredondamento: 20,
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
                   _itemResumo(
@@ -181,9 +124,9 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
                     corIcone: AppColors.primary,
                     corFundoIcone: AppColors.primaryLight,
                     titulo: 'Saldo Atual',
-                    valor: formatarMoeda(_saldoTotal),
+                    valor: formatarMoeda(saldoTotal),
                     corValor:
-                        _saldoTotal >= 0 ? AppColors.income : AppColors.expense,
+                        saldoTotal >= 0 ? AppColors.income : AppColors.expense,
                   ),
                   const Divider(color: AppColors.border),
                   _itemResumo(
@@ -191,7 +134,7 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
                     corIcone: AppColors.income,
                     corFundoIcone: AppColors.incomeLight,
                     titulo: 'Total de Entradas',
-                    valor: '+ ${formatarMoeda(_totalEntradas)}',
+                    valor: '+ ${formatarMoeda(totalEntradas)}',
                     corValor: AppColors.income,
                   ),
                   const Divider(color: AppColors.border),
@@ -200,7 +143,7 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
                     corIcone: AppColors.expense,
                     corFundoIcone: AppColors.expenseLight,
                     titulo: 'Total de Saídas',
-                    valor: '- ${formatarMoeda(_totalSaidas)}',
+                    valor: '- ${formatarMoeda(totalSaidas)}',
                     corValor: AppColors.expense,
                   ),
                   const Divider(color: AppColors.border),
@@ -209,7 +152,7 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
                     corIcone: AppColors.fixed,
                     corFundoIcone: AppColors.fixedLight,
                     titulo: 'Gastos Fixos',
-                    valor: formatarMoeda(_totalFixos),
+                    valor: formatarMoeda(totalFixos),
                     corValor: AppColors.fixed,
                   ),
                 ],
@@ -305,16 +248,14 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Column(
                 children: [
-                  for (int i = 0; i < moedasPadrao.length; i++) ...[
+                  for (int i = 0; i < dados.moedas.length; i++) ...[
                     LinhaMoedaFavorita(
-                      moeda: moedasPadrao[i],
+                      moeda: dados.moedas[i],
                       onFavoritar: () {
-                        setState(() {
-                          moedasPadrao[i].favorita = !moedasPadrao[i].favorita;
-                        });
+                        dados.alternarFavorito(dados.moedas[i].codigo);
                       },
                     ),
-                    if (i < moedasPadrao.length - 1)
+                    if (i < dados.moedas.length - 1)
                       const Divider(color: AppColors.border, height: 8),
                   ],
                 ],
@@ -323,7 +264,7 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
             const SizedBox(height: 24),
 
             // ===== Cotações por Período =====
-            const TituloSecao(titulo: 'Histórico de Cotação'),
+            const TituloSecao(titulo: 'Histórico de Cotação (API REST)'),
             const SizedBox(height: 10),
             CartaoBranco(
               arredondamento: 20,
@@ -335,13 +276,13 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          initialValue: _moedaSelecionada,
+                          value: _moedaSelecionada,
                           decoration: const InputDecoration(
                             labelText: 'Moeda',
                             contentPadding: EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 12),
                           ),
-                          items: moedasPadrao.map((m) {
+                          items: dados.moedas.map((m) {
                             return DropdownMenuItem(
                               value: m.codigo,
                               child: Text('${m.bandeira} ${m.codigo}'),
@@ -358,7 +299,7 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<int>(
-                          initialValue: _diasPeriodo,
+                          value: _diasPeriodo,
                           decoration: const InputDecoration(
                             labelText: 'Período',
                             contentPadding: EdgeInsets.symmetric(
@@ -381,8 +322,9 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
                   ),
                   const SizedBox(height: 14),
                   ElevatedButton.icon(
-                    onPressed:
-                        _carregandoCotacoes ? null : _buscarCotacoesPeriodo,
+                    onPressed: dados.carregandoHistorico
+                        ? null
+                        : _buscarCotacoesPeriodo,
                     icon: const Icon(Icons.refresh_rounded, size: 20),
                     label: const Text('Atualizar Histórico'),
                   ),
@@ -391,8 +333,8 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
             ),
             const SizedBox(height: 12),
 
-            // ===== Lista de Cotações Históricas =====
-            if (_carregandoCotacoes)
+            // ===== Lista de Cotações Históricas (Loading / Erro / ListView.builder) =====
+            if (dados.carregandoHistorico)
               const Padding(
                 padding: EdgeInsets.all(32.0),
                 child: Center(
@@ -401,14 +343,14 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
                       CircularProgressIndicator(),
                       SizedBox(height: 12),
                       Text(
-                        'Carregando cotações do período...',
+                        'Carregando cotações da API REST...',
                         style: TextStyle(color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                 ),
               )
-            else if (_erroCotacoes != null)
+            else if (dados.erroHistorico != null)
               CartaoBranco(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -417,7 +359,7 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
                         color: AppColors.expense, size: 36),
                     const SizedBox(height: 8),
                     Text(
-                      _erroCotacoes!,
+                      dados.erroHistorico!,
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: AppColors.expense),
                     ),
@@ -430,76 +372,78 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
                 ),
               )
             else
-              ListView.separated(
+              ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: _historicoCotacoes.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                itemCount: dados.historicoCotacoes.length,
                 itemBuilder: (context, index) {
-                  final item = _historicoCotacoes[index];
+                  final item = dados.historicoCotacoes[index];
                   final isPositivo = item.variacao >= 0;
 
-                  return CartaoBranco(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.calendar_today_rounded,
-                            size: 16,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                formatarDataCompleta(item.data),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              Text(
-                                'Cotação: R\$ ${item.valor.toStringAsFixed(4)}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isPositivo
-                                ? AppColors.incomeLight
-                                : AppColors.expenseLight,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '${isPositivo ? '+' : ''}${item.variacao.toStringAsFixed(2)}%',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: isPositivo
-                                  ? AppColors.income
-                                  : AppColors.expense,
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: CartaoBranco(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryLight,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.calendar_today_rounded,
+                              size: 16,
+                              color: AppColors.primary,
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  formatarDataCompleta(item.data),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  'Cotação: R\$ ${item.valor.toStringAsFixed(4)}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isPositivo
+                                  ? AppColors.incomeLight
+                                  : AppColors.expenseLight,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${isPositivo ? '+' : ''}${item.variacao.toStringAsFixed(2)}%',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: isPositivo
+                                    ? AppColors.income
+                                    : AppColors.expense,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },

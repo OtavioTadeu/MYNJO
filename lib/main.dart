@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dados/app_dados.dart';
 import 'screens/login.dart';
 import 'theme/app_theme.dart';
 
@@ -11,11 +13,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'MYNJO Cash',
-      theme: AppTheme.lightTheme,
-      home: const TelaLogin(),
+    return ChangeNotifierProvider(
+      create: (_) => AppDados()..iniciar(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'MYNJO Cash',
+        theme: AppTheme.lightTheme,
+        home: const TelaLogin(),
+      ),
     );
   }
 }

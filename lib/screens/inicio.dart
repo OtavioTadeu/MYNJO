@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../components/botao_acao_rapida.dart';
 import '../components/card_moeda.dart';
 import '../components/cartao_branco.dart';
 import '../components/item_transacao.dart';
 import '../components/titulo_secao.dart';
+import '../dados/app_dados.dart';
 import '../models/moeda.dart';
-import '../models/preferencias.dart';
 import '../models/transacao.dart';
 import '../models/usuario.dart';
 import '../theme/app_colors.dart';
@@ -29,82 +30,56 @@ class TelaInicio extends StatefulWidget {
 }
 
 class _TelaInicioState extends State<TelaInicio> {
-  late List<Transacao> _transacoes;
-  late List<MoedaCotacao> _moedas;
-  bool ocultarSaldo = true;
+  bool ocultarSaldo = false;
+  bool _preferenciaInicialCarregada = false;
 
   @override
   void initState() {
     super.initState();
-    // usa o que o usuário escolheu nas preferências
-    ocultarSaldo = preferencias.ocultarSaldoAoEntrar;
-  }
-
-  // soma todas as entradas
-  double calcularTotalEntradas() {
-    double total = 0;
-    for (Transacao t in transacoesExemplo) {
-      if (t.isEntrada) {
-        total = total + t.valor;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final dados = context.read<AppDados>();
+        if (!_preferenciaInicialCarregada) {
+          setState(() {
+            ocultarSaldo = dados.preferencias.ocultarSaldoAoEntrar;
+            _preferenciaInicialCarregada = true;
+          });
+        }
       }
-    }
-    return total;
+    });
   }
 
-  // soma todas as saídas (saídas normais + gastos fixos)
-  double calcularTotalSaidas() {
-    double total = 0;
-    for (Transacao t in transacoesExemplo) {
-      if (!t.isEntrada) {
-        total = total + t.valor;
-      }
-    }
-    return total;
-  }
-
-  // Abre outra tela e, quando voltar, atualiza esta tela
+  // Abre outra tela e, quando voltar, se houver nova transação, atualiza
   void abrirTela(Widget tela) async {
-    await Navigator.push(
+    final resultado = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => tela),
     );
-    setState(() {});
-  }
-
-  // Retorna as moedas que vão aparecer na tela inicial
-  List<MoedaCotacao> pegarMoedasParaMostrar() {
-    if (!preferencias.mostrarSomenteFavoritas) {
-      return moedasPadrao;
+    if (resultado is Transacao && mounted) {
+      context.read<AppDados>().adicionarTransacao(resultado);
     }
-    List<MoedaCotacao> favoritas = [];
-    for (MoedaCotacao m in moedasPadrao) {
-      if (m.favorita) {
-        favoritas.add(m);
-      }
-    }
-    return favoritas;
   }
 
   void abrirPerfil() {
-    // se por algum motivo não tiver usuário, usa o primeiro da lista
     Usuario usuario = widget.usuario ?? usuariosCadastrados.first;
     abrirTela(TelaPerfil(usuario: usuario));
   }
 
   @override
   Widget build(BuildContext context) {
+    final dados = context.watch<AppDados>();
+
     String nomeUsuario = 'Usuário';
     if (widget.usuario != null) {
       nomeUsuario = widget.usuario!.nome.split(' ').first;
     }
 
-    double totalEntradas = calcularTotalEntradas();
-    double totalSaidas = calcularTotalSaidas();
-    double saldo = totalEntradas - totalSaidas;
+    double totalEntradas = dados.totalEntradas;
+    double totalSaidas = dados.totalSaidas;
+    double saldo = dados.saldo;
 
-    // pega só as 5 primeiras transações
-    List<Transacao> ultimasTransacoes = transacoesExemplo.take(5).toList();
-    List<MoedaCotacao> moedasParaMostrar = pegarMoedasParaMostrar();
+    List<Transacao> ultimasTransacoes = dados.transacoes.take(5).toList();
+    List<MoedaCotacao> moedasParaMostrar = dados.moedasParaExibir;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -138,21 +113,24 @@ class _TelaInicioState extends State<TelaInicio> {
         actions: [
           IconButton(
             tooltip: 'Extrato',
-            icon: const Icon(Icons.receipt_long_rounded, color: AppColors.textSecondary),
+            icon: const Icon(Icons.receipt_long_rounded,
+                color: AppColors.textSecondary),
             onPressed: () {
               abrirTela(const TelaExtratoLancamento());
             },
           ),
           IconButton(
             tooltip: 'Relatório',
-            icon: const Icon(Icons.pie_chart_outline_rounded, color: AppColors.textSecondary),
+            icon: const Icon(Icons.pie_chart_outline_rounded,
+                color: AppColors.textSecondary),
             onPressed: () {
               abrirTela(const TelaRelatorio());
             },
           ),
           IconButton(
             tooltip: 'Meu perfil',
-            icon: const Icon(Icons.account_circle_outlined, color: AppColors.textSecondary),
+            icon: const Icon(Icons.account_circle_outlined,
+                color: AppColors.textSecondary),
             onPressed: abrirPerfil,
           ),
           const SizedBox(width: 8),
@@ -196,7 +174,8 @@ class _TelaInicioState extends State<TelaInicio> {
                         },
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
-                        tooltip: ocultarSaldo ? 'Mostrar saldo' : 'Ocultar saldo',
+                        tooltip:
+                            ocultarSaldo ? 'Mostrar saldo' : 'Ocultar saldo',
                         icon: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
@@ -221,12 +200,12 @@ class _TelaInicioState extends State<TelaInicio> {
                       color: Colors.white.withValues(alpha: 0.75),
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 1.1,
+                      letterSpacing: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
-                    ocultarSaldo ? 'R\$ ••••••••' : formatarMoeda(saldo),
+                    ocultarSaldo ? 'R\$ ••••••' : formatarMoeda(saldo),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 32,
@@ -238,11 +217,11 @@ class _TelaInicioState extends State<TelaInicio> {
                   Row(
                     children: [
                       Expanded(
-                        child: caixinhaResumo('Entradas no mês', totalEntradas),
+                        child: caixinhaResumo('Entradas', totalEntradas),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: caixinhaResumo('Saídas no mês', totalSaidas),
+                        child: caixinhaResumo('Saídas', totalSaidas),
                       ),
                     ],
                   ),
@@ -251,17 +230,18 @@ class _TelaInicioState extends State<TelaInicio> {
             ),
             const SizedBox(height: 20),
 
-            // ===== Ações rápidas =====
+            // ===== Botões de ação rápida =====
             Row(
               children: [
                 Expanded(
                   child: BotaoAcaoRapida(
                     texto: 'Entrada',
-                    icone: Icons.south_west_rounded,
+                    icone: Icons.arrow_downward_rounded,
                     corIcone: AppColors.income,
                     corFundoIcone: AppColors.incomeLight,
                     onTap: () {
-                      abrirTela(const TelaLancamento(tipoInicial: TipoTransacao.entrada));
+                      abrirTela(const TelaLancamento(
+                          tipoInicial: TipoTransacao.entrada));
                     },
                   ),
                 ),
@@ -269,11 +249,12 @@ class _TelaInicioState extends State<TelaInicio> {
                 Expanded(
                   child: BotaoAcaoRapida(
                     texto: 'Saída',
-                    icone: Icons.north_east_rounded,
+                    icone: Icons.arrow_upward_rounded,
                     corIcone: AppColors.expense,
                     corFundoIcone: AppColors.expenseLight,
                     onTap: () {
-                      abrirTela(const TelaLancamento(tipoInicial: TipoTransacao.saida));
+                      abrirTela(const TelaLancamento(
+                          tipoInicial: TipoTransacao.saida));
                     },
                   ),
                 ),
@@ -285,7 +266,8 @@ class _TelaInicioState extends State<TelaInicio> {
                     corIcone: AppColors.fixed,
                     corFundoIcone: AppColors.fixedLight,
                     onTap: () {
-                      abrirTela(const TelaLancamento(tipoInicial: TipoTransacao.fixo));
+                      abrirTela(
+                          const TelaLancamento(tipoInicial: TipoTransacao.fixo));
                     },
                   ),
                 ),
@@ -295,39 +277,21 @@ class _TelaInicioState extends State<TelaInicio> {
 
             // ===== Moedas =====
             TituloSecao(
-              titulo: 'Moedas favoritas',
-              direita: Text(
-                'PTAX · Banco Central',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary.withValues(alpha: 0.8),
-                ),
-              ),
+              titulo: 'Cotações em tempo real',
+              direita: dados.carregando
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : IconButton(
+                      tooltip: 'Atualizar cotações',
+                      icon: const Icon(Icons.refresh_rounded, size: 20),
+                      onPressed: () => dados.carregarCotacoes(),
+                    ),
             ),
             const SizedBox(height: 12),
-            if (moedasParaMostrar.isEmpty)
-              semMoedasFavoritas()
-            else
-              SizedBox(
-                height: 115,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: moedasParaMostrar.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 12),
-                  itemBuilder: (context, index) {
-                    MoedaCotacao moeda = moedasParaMostrar[index];
-                    return CardMoeda(
-                      moeda: moeda,
-                      onFavoritar: () {
-                        setState(() {
-                          moeda.favorita = !moeda.favorita;
-                        });
-                      },
-                    );
-                  },
-                ),
-              ),
+            _secaoMoedas(dados, moedasParaMostrar),
             const SizedBox(height: 24),
 
             // ===== Últimos lançamentos =====
@@ -337,19 +301,34 @@ class _TelaInicioState extends State<TelaInicio> {
                 onPressed: () {
                   abrirTela(const TelaExtratoLancamento());
                 },
-                child: Text('Ver todos (${transacoesExemplo.length})'),
+                child: Text('Ver todos (${dados.transacoes.length})'),
               ),
             ),
             const SizedBox(height: 12),
-            ListView.separated(
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: ultimasTransacoes.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                return ItemTransacao(transacao: ultimasTransacoes[index]);
-              },
-            ),
+            if (ultimasTransacoes.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    'Nenhum lançamento registrado.',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+              )
+            else
+              ListView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                shrinkWrap: true,
+                itemCount: ultimasTransacoes.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: ItemTransacao(
+                      transacao: ultimasTransacoes[index],
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -360,6 +339,62 @@ class _TelaInicioState extends State<TelaInicio> {
         tooltip: 'Novo lançamento',
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _secaoMoedas(AppDados dados, List<MoedaCotacao> moedasParaMostrar) {
+    if (dados.carregando && dados.moedas.isEmpty) {
+      return const SizedBox(
+        height: 115,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (dados.erro != null && moedasParaMostrar.isEmpty) {
+      return CartaoBranco(
+        arredondamento: 18,
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline, color: AppColors.expense, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                dados.erro!,
+                style: const TextStyle(fontSize: 13, color: AppColors.expense),
+              ),
+            ),
+            TextButton(
+              onPressed: () => dados.carregarCotacoes(),
+              child: const Text('Tentar de novo'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (moedasParaMostrar.isEmpty) {
+      return semMoedasFavoritas();
+    }
+
+    return SizedBox(
+      height: 115,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: moedasParaMostrar.length,
+        itemBuilder: (context, index) {
+          MoedaCotacao moeda = moedasParaMostrar[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: CardMoeda(
+              moeda: moeda,
+              onFavoritar: () {
+                dados.alternarFavorito(moeda.codigo);
+              },
+            ),
+          );
+        },
       ),
     );
   }
@@ -404,7 +439,8 @@ class _TelaInicioState extends State<TelaInicio> {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          const Icon(Icons.star_outline_rounded, color: AppColors.starGold, size: 28),
+          const Icon(Icons.star_outline_rounded,
+              color: AppColors.starGold, size: 28),
           const SizedBox(width: 12),
           const Expanded(
             child: Text(

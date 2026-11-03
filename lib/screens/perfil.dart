@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../dados/app_dados.dart';
 import '../components/botao_principal.dart';
 import '../components/campo_email.dart';
 import '../components/campo_senha.dart';
@@ -8,7 +10,7 @@ import '../components/linha_preferencia.dart';
 import '../components/mensagens.dart';
 import '../components/titulo_secao.dart';
 import '../models/moeda.dart';
-import '../models/preferencias.dart';
+
 import '../models/usuario.dart';
 import '../utils/dimensoes_tela.dart';
 import '../theme/app_colors.dart';
@@ -129,6 +131,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
 
   @override
   Widget build(BuildContext context) {
+    final dados = context.watch<AppDados>();
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -245,10 +248,10 @@ class _TelaPerfilState extends State<TelaPerfil> {
                     icone: Icons.visibility_off_outlined,
                     titulo: 'Ocultar saldo ao entrar',
                     descricao: 'O saldo começa escondido na tela inicial',
-                    valor: preferencias.ocultarSaldoAoEntrar,
+                    valor: dados.preferencias.ocultarSaldoAoEntrar,
                     onChanged: (novoValor) {
                       setState(() {
-                        preferencias.ocultarSaldoAoEntrar = novoValor;
+                        dados.atualizarPreferencias(ocultarSaldoAoEntrar: novoValor);
                       });
                     },
                   ),
@@ -257,10 +260,10 @@ class _TelaPerfilState extends State<TelaPerfil> {
                     icone: Icons.star_outline_rounded,
                     titulo: 'Só moedas favoritas',
                     descricao: 'Mostrar apenas as favoritas na tela inicial',
-                    valor: preferencias.mostrarSomenteFavoritas,
+                    valor: dados.preferencias.mostrarSomenteFavoritas,
                     onChanged: (novoValor) {
                       setState(() {
-                        preferencias.mostrarSomenteFavoritas = novoValor;
+                        dados.atualizarPreferencias(mostrarSomenteFavoritas: novoValor);
                       });
                     },
                   ),
@@ -269,10 +272,10 @@ class _TelaPerfilState extends State<TelaPerfil> {
                     icone: Icons.delete_outline_rounded,
                     titulo: 'Confirmar exclusão',
                     descricao: 'Perguntar antes de excluir um lançamento',
-                    valor: preferencias.confirmarAntesDeExcluir,
+                    valor: dados.preferencias.confirmarAntesDeExcluir,
                     onChanged: (novoValor) {
                       setState(() {
-                        preferencias.confirmarAntesDeExcluir = novoValor;
+                        dados.atualizarPreferencias(confirmarAntesDeExcluir: novoValor);
                       });
                     },
                   ),
@@ -282,9 +285,9 @@ class _TelaPerfilState extends State<TelaPerfil> {
                     padding: const EdgeInsets.only(right: 8),
                     child: Row(
                       children: [
-                        Expanded(child: campoMoedaPadrao()),
+                        Expanded(child: campoMoedaPadrao(dados)),
                         const SizedBox(width: 12),
-                        Expanded(child: campoPeriodoPadrao()),
+                        Expanded(child: campoPeriodoPadrao(dados)),
                       ],
                     ),
                   ),
@@ -370,7 +373,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
     );
   }
 
-  Widget campoMoedaPadrao() {
+  Widget campoMoedaPadrao(AppDados dados) {
     List<DropdownMenuItem<String>> opcoes = [];
     for (MoedaCotacao m in moedasPadrao) {
       opcoes.add(
@@ -379,22 +382,22 @@ class _TelaPerfilState extends State<TelaPerfil> {
     }
 
     return DropdownButtonFormField<String>(
-      initialValue: preferencias.moedaPadrao,
+      value: dados.preferencias.moedaPadrao,
       decoration: const InputDecoration(labelText: 'Moeda padrão'),
       items: opcoes,
       onChanged: (novo) {
         if (novo != null) {
           setState(() {
-            preferencias.moedaPadrao = novo;
+            dados.atualizarPreferencias(moedaPadrao: novo);
           });
         }
       },
     );
   }
 
-  Widget campoPeriodoPadrao() {
+  Widget campoPeriodoPadrao(AppDados dados) {
     return DropdownButtonFormField<int>(
-      initialValue: preferencias.periodoPadrao,
+      value: dados.preferencias.periodoPadrao,
       decoration: const InputDecoration(labelText: 'Período padrão'),
       items: const [
         DropdownMenuItem(value: 7, child: Text('7 dias')),
@@ -404,7 +407,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
       onChanged: (novo) {
         if (novo != null) {
           setState(() {
-            preferencias.periodoPadrao = novo;
+            dados.atualizarPreferencias(periodoPadrao: novo);
           });
         }
       },

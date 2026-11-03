@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../dados/app_dados.dart';
 import '../components/botao_principal.dart';
 import '../components/mensagens.dart';
 import '../models/transacao.dart';
@@ -61,6 +63,7 @@ class _TelaLancamentoState extends State<TelaLancamento> {
 
     // coloca no começo da lista para aparecer primeiro
     transacoesExemplo.insert(0, novaTransacao);
+    context.read<AppDados>().adicionarTransacao(novaTransacao);
 
     mostrarMensagemSucesso(context, 'Lançamento salvo com sucesso!');
     Navigator.pop(context, novaTransacao);
@@ -97,7 +100,7 @@ class _TelaLancamentoState extends State<TelaLancamento> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 DropdownButtonFormField<TipoTransacao>(
-                  initialValue: _tipoSelecionado,
+                  value: _tipoSelecionado,
                   decoration: const InputDecoration(
                     labelText: 'Tipo de Transação',
                     border: OutlineInputBorder(),
@@ -162,7 +165,7 @@ class _TelaLancamentoState extends State<TelaLancamento> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  initialValue: _categoriaSelecionada,
+                  value: _categoriaSelecionada,
                   decoration: const InputDecoration(
                     labelText: 'Categoria',
                     border: OutlineInputBorder(),
