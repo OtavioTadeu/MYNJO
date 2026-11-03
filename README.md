@@ -9,11 +9,11 @@ Aplicativo de controle financeiro pessoal e acompanhamento de câmbio desenvolvi
 - **Aplicativo:** MYNJO Cash
 - **Squad:** Squad MYNJO
 - **Integrantes:**
-  - **Otávio Tadeu Magalhães Ferreira** — Matrícula: `72500964` | E-mail: `otaviotadeu244@gmail.com`
-  - **João Félix** — E-mail: `joaoliveirafelix@gmail.com`
-  - **Marcus Vinicius Calegar** — E-mail: `calegarmarcus@gmail.com`
-  - **Natan Mendes Silva** — E-mail: `mnatan636@gmail.com`
-  - **Yuri Stiwart** — E-mail: `yuristiwart@gmail.com`
+  - **Otávio Tadeu Magalhães Ferreira** — Matrícula: `72500964` | E-mail: `72500964@aluno.faculdadecotemig.br` (`otaviotadeu244@gmail.com`)
+  - **João Félix** — Matrícula: `72500344` | E-mail: `72500344@aluno.faculdadecotemig.br`
+  - **Marcus Vinicius Calegar** — Matrícula: `72500549` | E-mail: `72500549@aluno.faculdadecotemig.br`
+  - **Natan Mendes Silva** — Matrícula: `72400102` | E-mail: `72400102@aluno.faculdadecotemig.br`
+  - **Yuri Stiwart Faria Filho** — Matrícula: `72500581` | E-mail: `72500581@aluno.faculdadecotemig.br`
 
 ---
 
