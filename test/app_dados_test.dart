@@ -59,3 +59,4 @@ void main() {
     expect(dados.totalEntradas, totalEntradasInicial);
   });
 }
+

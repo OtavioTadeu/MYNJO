@@ -47,3 +47,4 @@ class ServicoPreferencias {
     await prefs.setStringList(chaveFavoritos, favoritos.toList());
   }
 }
+

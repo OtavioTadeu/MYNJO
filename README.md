@@ -1,59 +1,128 @@
 # MYNJO Cash 💰
 
-Aplicativo de controle e planejamento financeiro desenvolvido em Flutter pela **Squad MYNJO** (Cotemig 2026).
+Aplicativo de controle financeiro pessoal e acompanhamento de câmbio desenvolvido em Flutter para a disciplina de **Desenvolvimento para Ambientes Móveis (Faculdade COTEMIG 2026.2)**.
 
 ---
 
-## 📌 Sobre o Projeto
-O **MYNJO Cash** tem como objetivo auxiliar no gerenciamento das finanças pessoais, permitindo registrar movimentações, acompanhar o saldo em tempo real, analisar relatórios de gastos e consultar cotações de moedas.
+## 1. Identificação
+
+- **Aplicativo:** MYNJO Cash
+- **Squad:** Squad MYNJO
+- **Integrantes:**
+  - **Otávio Tadeu Magalhães Ferreira** — Matrícula: `72500964` | E-mail: `otaviotadeu244@gmail.com`
+  - **João Félix** — E-mail: `joaoliveirafelix@gmail.com`
+  - **Marcus Vinicius Calegar** — E-mail: `calegarmarcus@gmail.com`
+  - **Natan Mendes Silva** — E-mail: `mnatan636@gmail.com`
+  - **Yuri Stiwart** — E-mail: `yuristiwart@gmail.com`
 
 ---
 
-## 🚀 Funcionalidades
-- **Autenticação:** Cadastro e login de usuários com validação de formulários.
-- **Painel Principal:** Visão geral do saldo atual, atalhos rápidos e cotações de moedas com suporte a favoritos.
-- **Lançamentos:** Registro de transações divididas em entradas (receitas), saídas (despesas) e gastos fixos.
-- **Extrato Financeiro:** Histórico de movimentações com filtros por tipo e opção de exclusão.
-- **Relatório & Cotações:** Gráfico visual de gastos por categoria e consulta de histórico de cotações por período.
+## 2. Sobre o Projeto
+
+O **MYNJO Cash** é um aplicativo voltado para o público geral, especialmente jovens e estudantes que desejam organizar suas finanças pessoais de forma prática, moderna e sem complexidade. O app permite o controle centralizado de entradas (receitas), saídas (despesas) e gastos fixos, além de monitorar moedas estrangeiras com cotações e histórico atualizados em tempo real. O fluxo se inicia na tela de **Login** (ou **Cadastro** de novos usuários); após autenticado, o usuário navega para o painel de **Início**, onde visualiza seu saldo consolidado, atalhos rápidos e moedas favoritas. A partir dele, acessa as telas de **Lançamento** (para registrar movimentações), **Extrato** (com filtros dinâmicos e exclusão), **Relatório** (com gráficos de categorias e histórico de câmbio) e **Perfil** (para gerenciar preferências de visualização e segurança).
 
 ---
 
-## 📱 Telas do Aplicativo
-1. **Login:** Acesso com e-mail e senha.
-2. **Cadastro:** Registro de novos usuários com validação.
-3. **Início:** Painel principal com saldo, moedas e navegação para as demais telas.
-4. **Lançamentos:** Formulário para cadastrar entradas, saídas e gastos fixos.
-5. **Extrato de Lançamentos:** Listagem completa com filtros rápidos (Todas, Entradas, Saídas e Fixos).
-6. **Relatório:** Resumo financeiro, gráfico de gastos por categoria e cotações por período.
+## 3. Requisitos Atendidos
+
+| # | Requisito | Descrição | Onde está implementado no App |
+|---|---|---|---|
+| **1** | **Pelo menos 4 telas com `Navigator.push` e `pop`** | Navegação fluida entre telas com empilhamento e retorno | Presente em [`login.dart`](lib/screens/login.dart), [`cadastro.dart`](lib/screens/cadastro.dart), [`inicio.dart`](lib/screens/inicio.dart), [`lancamento.dart`](lib/screens/lancamento.dart), [`extrato_lancamento.dart`](lib/screens/extrato_lancamento.dart), [`relatorio.dart`](lib/screens/relatorio.dart) e [`perfil.dart`](lib/screens/perfil.dart). |
+| **2** | **API REST com `http` e `async/await`** | Dados dinâmicos consumidos de API REST externa | Implementado em [`servico_cotacoes.dart`](lib/dados/servico_cotacoes.dart) consumindo a **AwesomeAPI** (`/last/...` e `/json/daily/...`) com `http.get` e `async/await`. |
+| **3** | **Loading e erro visíveis na UI** | Feedback de carregamento e mensagens de falha com opção de tentar novamente | Exibido no carrossel de cotações em [`inicio.dart`](lib/screens/inicio.dart) e no histórico de cotações em [`relatorio.dart`](lib/screens/relatorio.dart) via `CircularProgressIndicator` e cards de erro com retry. |
+| **4** | **Formulário com `Form` e `validator`** | Validação estruturada de entradas do usuário | [`login.dart`](lib/screens/login.dart) (e-mail e senha), [`cadastro.dart`](lib/screens/cadastro.dart) (nome, e-mail e confirmação de senha), [`lancamento.dart`](lib/screens/lancamento.dart) (descrição e valor numérico > 0) e [`perfil.dart`](lib/screens/perfil.dart). |
+| **5** | **Lista dinâmica com `ListView.builder`** | Construção eficiente de listagens dinâmicas | Implementado no extrato em [`extrato_lancamento.dart`](lib/screens/extrato_lancamento.dart), na lista de moedas e últimos lançamentos em [`inicio.dart`](lib/screens/inicio.dart), e no histórico de câmbio em [`relatorio.dart`](lib/screens/relatorio.dart). |
+| **6** | **`SharedPreferences` persiste ao reabrir o app** | Armazenamento local de configurações e dados do usuário | Gerenciado em [`servico_preferencias.dart`](lib/dados/servico_preferencias.dart), persistindo preferências (ocultar saldo, moedas favoritas, período padrão, confirmação de exclusão) e estado de moedas favoritadas. |
+| **7** | **Provider: telas, HTTP e prefs separados** | Separação de responsabilidades e gestão de estado desacoplada | Camada de dados estruturada em `lib/dados/`: <br>• **HTTP:** [`servico_cotacoes.dart`](lib/dados/servico_cotacoes.dart) <br>• **Prefs:** [`servico_preferencias.dart`](lib/dados/servico_preferencias.dart) <br>• **Provider:** [`app_dados.dart`](lib/dados/app_dados.dart) (`ChangeNotifier`) provido via `ChangeNotifierProvider` na raiz. Telas consomem via `context.watch`/`read`. |
+| **8** | **App abre e percorre o fluxo sem crashar** | Estabilidade em todo o ciclo de vida e navegação | Validado com `flutter analyze` (**0 erros**), testes automatizados (`flutter test`) com 100% de sucesso e execução homologada no Chrome e mobile. |
 
 ---
 
-## 🛠️ Tecnologias
-- **Linguagem:** Dart
-- **Framework:** Flutter (Material Design 3)
+## 4. API e Dados Remotos
+
+- **URL Base:** `https://economia.awesomeapi.com.br`
+- **Endpoints Utilizados:**
+  - `GET /last/USD-BRL,EUR-BRL,GBP-BRL,ARS-BRL,CAD-BRL,JPY-BRL,CHF-BRL`: Cotações atuais de compra (`bid`), venda (`ask`) e variação percentual (`pctChange`) em relação ao Real brasileiro (BRL).
+  - `GET /json/daily/{MOEDA}-BRL/{DIAS}`: Histórico diário das cotações dos últimos 7, 15 ou 30 dias para a moeda especificada.
+- **Tipo de API:** Pública (sem necessidade de chaves privadas ou tokens pagos).
+- **Usuário e Senha de Teste para o App:**
+  - **E-mail:** `admin@mynjo.com`
+  - **Senha:** `admin`
+  - *(Também é possível cadastrar novos usuários livremente pela tela de Cadastro)*.
 
 ---
 
-## ▶️ Como Executar
-1. Certifique-se de ter o Flutter instalado e configurado.
-2. Clone o repositório:
+## 5. Como Rodar o Projeto
+
+### Pré-requisitos
+- **Flutter SDK:** versão `>= 3.6.0` (testado e homologado no Flutter `3.27.x stable`).
+- **Dart SDK:** versão `>= 3.6.0`.
+- Navegador Google Chrome, Emulador Android ou dispositivo móvel conectado.
+
+### Passo a Passo
+
+1. **Clonar o repositório:**
    ```bash
-   git clone https://github.com/OtavioTadeu/MYNJO.git
+   git clone https://github.com/otaviotadeu/mynjo.git
+   cd mynjo
    ```
-3. Acesse a pasta do projeto e instale as dependências:
+
+2. **Instalar as dependências:**
    ```bash
    flutter pub get
    ```
-4. Execute o aplicativo:
+
+3. **Executar os testes automatizados (opcional):**
    ```bash
-   flutter run
+   flutter test
    ```
+
+4. **Rodar a aplicação:**
+   - No Google Chrome:
+     ```bash
+     flutter run -d chrome
+     ```
+   - No emulador ou celular conectado:
+     ```bash
+     flutter run
+     ```
+
+- **Plataformas Homologadas:** Web (Google Chrome), Android e Windows Desktop.
 
 ---
 
-## 👥 Squad MYNJO
-- João Félix
-- Marcus Calegar
-- Natan Silva
-- Otávio Tadeu
-- Yuri Stewart
+## 6. Backend Local
+
+**Não há backend local.** O aplicativo consome diretamente a API pública em nuvem da **AwesomeAPI** para dados econômicos e cotações cambiais em tempo real, dispensando a necessidade de iniciar servidores locais (Node.js, Python, etc.). Toda a persistência de preferências do usuário e moedas favoritas é gerenciada no próprio cliente através do **SharedPreferences**.
+
+---
+
+## 7. Estrutura do Código
+
+A arquitetura do projeto segue a separação de responsabilidades recomendada pelo Flutter e ensinada no curso:
+
+```
+lib/
+├── components/          # Componentes visuais reutilizáveis (cartões, botões, chips, linhas de preferência)
+├── dados/               # Camada de Dados e Estado
+│   ├── app_dados.dart            # ChangeNotifier (Provider global gerenciando o estado da aplicação)
+│   ├── servico_cotacoes.dart     # Serviço isolado para chamadas HTTP REST (AwesomeAPI)
+│   └── servico_preferencias.dart # Serviço isolado para persistência com SharedPreferences
+├── models/              # Modelos de dados puros (Moeda, Transação, Preferências, Usuário)
+├── screens/             # Telas da interface (Login, Cadastro, Início, Lançamento, Extrato, Relatório, Perfil)
+├── theme/               # Identidade visual, cores (AppColors) e temas Material 3 (AppTheme)
+├── utils/               # Formatadores de moeda/data e dimensões responsivas
+└── main.dart            # Ponto de entrada com injeção do ChangeNotifierProvider
+```
+
+---
+
+## 8. Observações
+
+- **Limitações:** Em caso de perda de conexão com a internet, o aplicativo exibe mensagens claras de erro na UI com botão de recarregar e mantém em cache os valores padrão das moedas para não interromper a usabilidade do usuário.
+- **Bônus Implementados:**
+  - Alternância de visibilidade do saldo com persistência nas preferências.
+  - Suporte completo a moedas favoritas na tela inicial sincronizadas com o SharedPreferences.
+  - Testes unitários automatizados em [`test/app_dados_test.dart`](test/app_dados_test.dart) cobrindo leitura/escrita no `SharedPreferences`, atualização de favoritos e regras de negócio de saldo.
+  - Interface adaptável e responsiva com centralização em telas maiores (Web e Desktop).
+- **O que não deu tempo:** Sincronização em nuvem das transações de lançamentos via banco de dados remoto (como Firebase Firestore ou Supabase); atualmente, as transações criadas permanecem persistidas na sessão em memória gerenciada pelo Provider durante o ciclo de uso.

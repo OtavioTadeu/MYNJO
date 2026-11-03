@@ -87,3 +87,4 @@ class ServicoCotacoes {
     return resultado;
   }
 }
+
