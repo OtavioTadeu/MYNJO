@@ -50,14 +50,11 @@ class _TelaExtratoLancamentoState extends State<TelaExtratoLancamento> {
     return quantidade;
   }
 
-  void abrirNovoLancamento() async {
-    final novo = await Navigator.push(
+  void abrirNovoLancamento() {
+    Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const TelaLancamento()),
     );
-    if (novo is Transacao && mounted) {
-      context.read<AppDados>().adicionarTransacao(novo);
-    }
   }
 
   void excluirTransacao(Transacao transacao) {

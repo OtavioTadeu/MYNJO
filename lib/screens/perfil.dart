@@ -91,6 +91,8 @@ class _TelaPerfilState extends State<TelaPerfil> {
       widget.usuario.email = email;
     });
 
+    context.read<AppDados>().atualizarUsuario(widget.usuario);
+
     // esconde o teclado
     FocusScope.of(context).unfocus();
     mostrarMensagemSucesso(context, 'Dados atualizados!');
@@ -102,6 +104,7 @@ class _TelaPerfilState extends State<TelaPerfil> {
     }
 
     widget.usuario.senha = novaSenhaController.text;
+    context.read<AppDados>().atualizarUsuario(widget.usuario);
 
     // limpa os campos
     senhaAtualController.clear();
@@ -118,7 +121,9 @@ class _TelaPerfilState extends State<TelaPerfil> {
       titulo: 'Sair do MYNJO Cash?',
       mensagem: 'Você precisará entrar com seu e-mail e senha novamente.',
       textoBotao: 'Sair',
-      aoConfirmar: () {
+      aoConfirmar: () async {
+        await context.read<AppDados>().registrarLogout();
+        if (!mounted) return;
         // volta para o login e apaga as telas anteriores
         Navigator.pushAndRemoveUntil(
           context,

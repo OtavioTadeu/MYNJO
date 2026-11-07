@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../components/botao_principal.dart';
 import '../components/cabecalho_gradiente.dart';
 import '../components/campo_email.dart';
 import '../components/campo_senha.dart';
 import '../components/cartao_branco.dart';
 import '../components/mensagens.dart';
+import '../dados/app_dados.dart';
 import '../models/usuario.dart';
 import '../theme/app_colors.dart';
 import '../utils/dimensoes_tela.dart';
@@ -30,15 +32,34 @@ class _TelaLoginState extends State<TelaLogin> {
   bool carregando = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final usuarioLogado = context.read<AppDados>().usuarioLogado;
+        if (usuarioLogado != null && emailController.text.isEmpty) {
+          setState(() {
+            emailController.text = usuarioLogado.email;
+          });
+        }
+      }
+    });
+  }
+
+  @override
   void dispose() {
     emailController.dispose();
     senhaController.dispose();
     super.dispose();
   }
 
-  // Procura na lista um usuário com esse e-mail e senha.
-  // Se não achar, retorna null.
+  // Procura no banco de dados local um usuário com esse e-mail e senha.
   Usuario? buscarUsuario(String email, String senha) {
+    final usuarioDoBanco = context.read<AppDados>().buscarUsuario(email, senha);
+    if (usuarioDoBanco != null) {
+      return usuarioDoBanco;
+    }
+
     for (Usuario usuario in usuariosCadastrados) {
       bool mesmoEmail = usuario.email.toLowerCase() == email.toLowerCase();
       bool mesmaSenha = usuario.senha == senha;
@@ -76,6 +97,9 @@ class _TelaLoginState extends State<TelaLogin> {
       return;
     }
 
+    await context.read<AppDados>().registrarLogin(usuario);
+
+    if (!mounted) return;
     mostrarMensagemSucesso(context, 'Bem-vindo(a), ${usuario.nome}!');
 
     Navigator.pushReplacement(

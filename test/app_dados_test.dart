@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mynjo/dados/app_dados.dart';
 import 'package:mynjo/models/transacao.dart';
+import 'package:mynjo/models/usuario.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -55,8 +56,88 @@ void main() {
     dados.adicionarTransacao(nova);
     expect(dados.totalEntradas, totalEntradasInicial + 500.0);
 
+    // Tentativa de adicionar a mesma transação novamente não deve duplicar
+    dados.adicionarTransacao(nova);
+    expect(dados.transacoes.where((t) => t.id == 'teste-123').length, 1);
+    expect(dados.totalEntradas, totalEntradasInicial + 500.0);
+
     dados.removerTransacao('teste-123');
     expect(dados.totalEntradas, totalEntradasInicial);
+  });
+
+  test('BancoDadosLocal persiste transações entre reinicializações do app', () async {
+    // 1ª execução do app
+    final appInstancia1 = AppDados();
+    await appInstancia1.iniciar();
+
+    final novaTransacao = Transacao(
+      id: 'transacao-persistida-999',
+      tipo: TipoTransacao.saida,
+      descricao: 'Curso Flutter COTEMIG',
+      valor: 350.0,
+      categoria: 'Educação',
+      data: DateTime.now(),
+    );
+
+    appInstancia1.adicionarTransacao(novaTransacao);
+    expect(appInstancia1.transacoes.any((t) => t.id == 'transacao-persistida-999'), true);
+
+    // Aguarda microtask para persistência
+    await Future.delayed(const Duration(milliseconds: 50));
+
+    // 2ª execução do app (reinicialização completa)
+    final appInstancia2 = AppDados();
+    await appInstancia2.iniciar();
+
+    // A transação cadastrada na 1ª sessão deve estar presente
+    expect(appInstancia2.transacoes.any((t) => t.id == 'transacao-persistida-999'), true);
+    final encontrada = appInstancia2.transacoes.firstWhere((t) => t.id == 'transacao-persistida-999');
+    expect(encontrada.descricao, 'Curso Flutter COTEMIG');
+    expect(encontrada.valor, 350.0);
+  });
+
+  test('BancoDadosLocal persiste cadastro de novo usuário e sessão de login', () async {
+    // 1ª execução do app
+    final appInstancia1 = AppDados();
+    await appInstancia1.iniciar();
+
+    final novoUsuario = Usuario(
+      nome: 'Aluno Cotemig',
+      email: 'aluno@cotemig.br',
+      senha: 'senhaSegura123',
+    );
+
+    expect(appInstancia1.emailExiste('aluno@cotemig.br'), false);
+    await appInstancia1.cadastrarUsuario(novoUsuario);
+    expect(appInstancia1.emailExiste('aluno@cotemig.br'), true);
+
+    // Faz login com o usuário recém-criado
+    final autenticado = appInstancia1.buscarUsuario('aluno@cotemig.br', 'senhaSegura123');
+    expect(autenticado, isNotNull);
+    await appInstancia1.registrarLogin(autenticado!);
+    expect(appInstancia1.usuarioLogado?.email, 'aluno@cotemig.br');
+
+    // 2ª execução do app (reinicialização completa)
+    final appInstancia2 = AppDados();
+    await appInstancia2.iniciar();
+
+    // O usuário cadastrado deve continuar existindo no banco
+    expect(appInstancia2.emailExiste('aluno@cotemig.br'), true);
+    final usuarioRecuperado = appInstancia2.buscarUsuario('aluno@cotemig.br', 'senhaSegura123');
+    expect(usuarioRecuperado, isNotNull);
+    expect(usuarioRecuperado?.nome, 'Aluno Cotemig');
+
+    // A sessão ativa também deve ter sido persistida
+    expect(appInstancia2.usuarioLogado?.email, 'aluno@cotemig.br');
+
+    // Logout limpa a sessão
+    await appInstancia2.registrarLogout();
+    expect(appInstancia2.usuarioLogado, isNull);
+
+    // 3ª execução após logout
+    final appInstancia3 = AppDados();
+    await appInstancia3.iniciar();
+    expect(appInstancia3.usuarioLogado, isNull);
   });
 }
 

@@ -49,19 +49,20 @@ class _TelaInicioState extends State<TelaInicio> {
     });
   }
 
-  // Abre outra tela e, quando voltar, se houver nova transação, atualiza
-  void abrirTela(Widget tela) async {
-    final resultado = await Navigator.push(
+  // Abre outra tela
+  void abrirTela(Widget tela) {
+    Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => tela),
     );
-    if (resultado is Transacao && mounted) {
-      context.read<AppDados>().adicionarTransacao(resultado);
-    }
   }
 
   void abrirPerfil() {
-    Usuario usuario = widget.usuario ?? usuariosCadastrados.first;
+    final usuarioLogado = context.read<AppDados>().usuarioLogado;
+    final usuarios = context.read<AppDados>().usuarios;
+    Usuario usuario = widget.usuario ??
+        usuarioLogado ??
+        (usuarios.isNotEmpty ? usuarios.first : usuariosCadastrados.first);
     abrirTela(TelaPerfil(usuario: usuario));
   }
 
@@ -69,9 +70,10 @@ class _TelaInicioState extends State<TelaInicio> {
   Widget build(BuildContext context) {
     final dados = context.watch<AppDados>();
 
+    Usuario? usuarioAtivo = widget.usuario ?? dados.usuarioLogado;
     String nomeUsuario = 'Usuário';
-    if (widget.usuario != null) {
-      nomeUsuario = widget.usuario!.nome.split(' ').first;
+    if (usuarioAtivo != null) {
+      nomeUsuario = usuarioAtivo.nome.split(' ').first;
     }
 
     double totalEntradas = dados.totalEntradas;

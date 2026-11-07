@@ -28,6 +28,7 @@ class _TelaLancamentoState extends State<TelaLancamento> {
   late TipoTransacao _tipoSelecionado;
   late String _categoriaSelecionada;
   DateTime _dataSelecionada = DateTime.now();
+  bool _salvando = false;
 
   @override
   void initState() {
@@ -44,9 +45,17 @@ class _TelaLancamentoState extends State<TelaLancamento> {
   }
 
   void _salvarLancamento() {
+    if (_salvando) {
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
+
+    setState(() {
+      _salvando = true;
+    });
 
     // troca a vírgula por ponto para o Dart entender o número
     String valorTexto = _valorController.text.trim().replaceAll(',', '.');
@@ -66,7 +75,7 @@ class _TelaLancamentoState extends State<TelaLancamento> {
     context.read<AppDados>().adicionarTransacao(novaTransacao);
 
     mostrarMensagemSucesso(context, 'Lançamento salvo com sucesso!');
-    Navigator.pop(context, novaTransacao);
+    Navigator.pop(context);
   }
 
   void _selecionarData() async {

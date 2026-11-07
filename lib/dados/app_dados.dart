@@ -2,26 +2,34 @@ import 'package:flutter/foundation.dart';
 import '../models/moeda.dart';
 import '../models/preferencias.dart';
 import '../models/transacao.dart';
+import '../models/usuario.dart';
+import 'banco_dados_local.dart';
 import 'servico_cotacoes.dart';
 import 'servico_preferencias.dart';
 
 class AppDados extends ChangeNotifier {
   final ServicoCotacoes _servicoCotacoes;
   final ServicoPreferencias _servicoPreferencias;
+  final BancoDadosLocal _bancoDadosLocal;
 
   AppDados({
     ServicoCotacoes? servicoCotacoes,
     ServicoPreferencias? servicoPreferencias,
+    BancoDadosLocal? bancoDadosLocal,
   })  : _servicoCotacoes = servicoCotacoes ?? ServicoCotacoes(),
-        _servicoPreferencias = servicoPreferencias ?? ServicoPreferencias() {
+        _servicoPreferencias = servicoPreferencias ?? ServicoPreferencias(),
+        _bancoDadosLocal = bancoDadosLocal ?? BancoDadosLocal() {
     _moedas = List.from(moedasPadrao);
     _transacoes = List.from(transacoesExemplo);
+    _usuarios = List.from(usuariosPadrao);
   }
 
   late List<MoedaCotacao> _moedas;
   Set<String> _favoritos = {'USD', 'EUR'};
   Preferencias _preferencias = Preferencias();
   late List<Transacao> _transacoes;
+  List<Usuario> _usuarios = [];
+  Usuario? _usuarioLogado;
   List<CotacaoHistorico> _historicoCotacoes = [];
 
   bool _carregando = false;
@@ -35,6 +43,8 @@ class AppDados extends ChangeNotifier {
   Set<String> get favoritos => _favoritos;
   Preferencias get preferencias => _preferencias;
   List<Transacao> get transacoes => _transacoes;
+  List<Usuario> get usuarios => _usuarios;
+  Usuario? get usuarioLogado => _usuarioLogado;
   List<CotacaoHistorico> get historicoCotacoes => _historicoCotacoes;
 
   bool get carregando => _carregando;
@@ -73,13 +83,19 @@ class AppDados extends ChangeNotifier {
 
   double get saldo => totalEntradas - totalSaidas;
 
-  // Inicialização (carrega preferências, favoritos salvos e busca API REST)
+  // Inicialização (carrega preferências, banco local e cotações REST)
   Future<void> iniciar() async {
     _preferencias = await _servicoPreferencias.carregarPreferencias();
     _favoritos = await _servicoPreferencias.carregarFavoritos();
 
     // Sincroniza a instância global legado para compatibilidade
     _sincronizarPreferenciasGlobais();
+
+    // Carrega dados persistidos do BancoDadosLocal
+    _transacoes = await _bancoDadosLocal.carregarTransacoes();
+    _usuarios = await _bancoDadosLocal.carregarUsuarios();
+    _usuarioLogado = await _bancoDadosLocal.carregarUsuarioLogado();
+    usuariosCadastrados = _usuarios;
 
     // Aplica favoritos nas moedas
     _moedas = _moedas.map((m) {
@@ -183,15 +199,68 @@ class AppDados extends ChangeNotifier {
     }
   }
 
-  // Adicionar e remover lançamentos
+  // Adicionar e remover lançamentos com persistência no banco local
   void adicionarTransacao(Transacao transacao) {
+    if (_transacoes.any((t) => t.id == transacao.id)) {
+      return;
+    }
     _transacoes.insert(0, transacao);
     notifyListeners();
+    _bancoDadosLocal.salvarTransacoes(_transacoes);
   }
 
   void removerTransacao(String id) {
     _transacoes.removeWhere((t) => t.id == id);
     notifyListeners();
+    _bancoDadosLocal.salvarTransacoes(_transacoes);
+  }
+
+  // Gestão de usuários e login com persistência no banco local
+  Usuario? buscarUsuario(String email, String senha) {
+    for (final u in _usuarios) {
+      if (u.email.toLowerCase() == email.toLowerCase() && u.senha == senha) {
+        return u;
+      }
+    }
+    return null;
+  }
+
+  bool emailExiste(String email) {
+    return _usuarios.any((u) => u.email.toLowerCase() == email.toLowerCase());
+  }
+
+  Future<void> cadastrarUsuario(Usuario usuario) async {
+    _usuarios.add(usuario);
+    usuariosCadastrados = _usuarios;
+    notifyListeners();
+    await _bancoDadosLocal.salvarUsuarios(_usuarios);
+  }
+
+  Future<void> atualizarUsuario(Usuario usuario) async {
+    final index = _usuarios.indexWhere(
+        (u) => u.email.toLowerCase() == usuario.email.toLowerCase());
+    if (index != -1) {
+      _usuarios[index] = usuario;
+    }
+    if (_usuarioLogado != null &&
+        _usuarioLogado!.email.toLowerCase() == usuario.email.toLowerCase()) {
+      _usuarioLogado = usuario;
+      await _bancoDadosLocal.salvarUsuarioLogado(usuario);
+    }
+    usuariosCadastrados = _usuarios;
+    notifyListeners();
+    await _bancoDadosLocal.salvarUsuarios(_usuarios);
+  }
+
+  Future<void> registrarLogin(Usuario usuario) async {
+    _usuarioLogado = usuario;
+    notifyListeners();
+    await _bancoDadosLocal.salvarUsuarioLogado(usuario);
+  }
+
+  Future<void> registrarLogout() async {
+    _usuarioLogado = null;
+    notifyListeners();
+    await _bancoDadosLocal.limparSessao();
   }
 }
-

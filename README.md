@@ -32,8 +32,8 @@ O **MYNJO Cash** é um aplicativo voltado para o público geral, especialmente j
 | **3** | **Loading e erro visíveis na UI** | Feedback de carregamento e mensagens de falha com opção de tentar novamente | Exibido no carrossel de cotações em [`inicio.dart`](lib/screens/inicio.dart) e no histórico de cotações em [`relatorio.dart`](lib/screens/relatorio.dart) via `CircularProgressIndicator` e cards de erro com retry. |
 | **4** | **Formulário com `Form` e `validator`** | Validação estruturada de entradas do usuário | [`login.dart`](lib/screens/login.dart) (e-mail e senha), [`cadastro.dart`](lib/screens/cadastro.dart) (nome, e-mail e confirmação de senha), [`lancamento.dart`](lib/screens/lancamento.dart) (descrição e valor numérico > 0) e [`perfil.dart`](lib/screens/perfil.dart). |
 | **5** | **Lista dinâmica com `ListView.builder`** | Construção eficiente de listagens dinâmicas | Implementado no extrato em [`extrato_lancamento.dart`](lib/screens/extrato_lancamento.dart), na lista de moedas e últimos lançamentos em [`inicio.dart`](lib/screens/inicio.dart), e no histórico de câmbio em [`relatorio.dart`](lib/screens/relatorio.dart). |
-| **6** | **`SharedPreferences` persiste ao reabrir o app** | Armazenamento local de configurações e dados do usuário | Gerenciado em [`servico_preferencias.dart`](lib/dados/servico_preferencias.dart), persistindo preferências (ocultar saldo, moedas favoritas, período padrão, confirmação de exclusão) e estado de moedas favoritadas. |
-| **7** | **Provider: telas, HTTP e prefs separados** | Separação de responsabilidades e gestão de estado desacoplada | Camada de dados estruturada em `lib/dados/`: <br>• **HTTP:** [`servico_cotacoes.dart`](lib/dados/servico_cotacoes.dart) <br>• **Prefs:** [`servico_preferencias.dart`](lib/dados/servico_preferencias.dart) <br>• **Provider:** [`app_dados.dart`](lib/dados/app_dados.dart) (`ChangeNotifier`) provido via `ChangeNotifierProvider` na raiz. Telas consomem via `context.watch`/`read`. |
+| **6** | **`SharedPreferences` persiste ao reabrir o app** | Armazenamento local de configurações e dados do usuário | Gerenciado em [`servico_preferencias.dart`](lib/dados/servico_preferencias.dart) e [`banco_dados_local.dart`](lib/dados/banco_dados_local.dart), persistindo usuários cadastrados, sessão de login, histórico completo de transações/lançamentos, moedas favoritas e preferências visuais. |
+| **7** | **Provider: telas, HTTP e prefs separados** | Separação de responsabilidades e gestão de estado desacoplada | Camada de dados estruturada em `lib/dados/`: <br>• **HTTP:** [`servico_cotacoes.dart`](lib/dados/servico_cotacoes.dart) <br>• **Prefs:** [`servico_preferencias.dart`](lib/dados/servico_preferencias.dart) <br>• **Banco Local:** [`banco_dados_local.dart`](lib/dados/banco_dados_local.dart) <br>• **Provider:** [`app_dados.dart`](lib/dados/app_dados.dart) (`ChangeNotifier`) provido via `ChangeNotifierProvider` na raiz. Telas consomem via `context.watch`/`read`. |
 | **8** | **App abre e percorre o fluxo sem crashar** | Estabilidade em todo o ciclo de vida e navegação | Validado com `flutter analyze` (**0 erros**), testes automatizados (`flutter test`) com 100% de sucesso e execução homologada no Chrome e mobile. |
 
 ---
@@ -91,9 +91,9 @@ O **MYNJO Cash** é um aplicativo voltado para o público geral, especialmente j
 
 ---
 
-## 6. Backend Local
+## 6. Backend Local e Persistência
 
-**Não há backend local.** O aplicativo consome diretamente a API pública em nuvem da **AwesomeAPI** para dados econômicos e cotações cambiais em tempo real, dispensando a necessidade de iniciar servidores locais (Node.js, Python, etc.). Toda a persistência de preferências do usuário e moedas favoritas é gerenciada no próprio cliente através do **SharedPreferences**.
+**Não há backend remoto.** O aplicativo consome diretamente a API pública em nuvem da **AwesomeAPI** para dados econômicos e cotações cambiais em tempo real, dispensando a necessidade de iniciar servidores locais (Node.js, Python, etc.). Toda a persistência de contas de login cadastradas, sessão do usuário, histórico de lançamentos e preferências é gerenciada localmente pelo **BancoDadosLocal** e **ServicoPreferencias** através do **SharedPreferences**, garantindo que nenhum dado seja perdido ao reiniciar a aplicação por completo.
 
 ---
 
@@ -106,6 +106,7 @@ lib/
 ├── components/          # Componentes visuais reutilizáveis (cartões, botões, chips, linhas de preferência)
 ├── dados/               # Camada de Dados e Estado
 │   ├── app_dados.dart            # ChangeNotifier (Provider global gerenciando o estado da aplicação)
+│   ├── banco_dados_local.dart    # Banco de dados local simples persistindo usuários, login e lançamentos
 │   ├── servico_cotacoes.dart     # Serviço isolado para chamadas HTTP REST (AwesomeAPI)
 │   └── servico_preferencias.dart # Serviço isolado para persistência com SharedPreferences
 ├── models/              # Modelos de dados puros (Moeda, Transação, Preferências, Usuário)
@@ -121,8 +122,9 @@ lib/
 
 - **Limitações:** Em caso de perda de conexão com a internet, o aplicativo exibe mensagens claras de erro na UI com botão de recarregar e mantém em cache os valores padrão das moedas para não interromper a usabilidade do usuário.
 - **Bônus Implementados:**
+  - Banco de dados local simples (`banco_dados_local.dart`) com suporte a múltiplos usuários cadastrados, sessão ativa e transações persistidas.
   - Alternância de visibilidade do saldo com persistência nas preferências.
   - Suporte completo a moedas favoritas na tela inicial sincronizadas com o SharedPreferences.
-  - Testes unitários automatizados em [`test/app_dados_test.dart`](test/app_dados_test.dart) cobrindo leitura/escrita no `SharedPreferences`, atualização de favoritos e regras de negócio de saldo.
+  - Testes unitários e de widgets automatizados em [`test/`](test/) cobrindo persistência completa, autenticação, deduplicação de lançamentos e cálculos de saldo.
   - Interface adaptável e responsiva com centralização em telas maiores (Web e Desktop).
-- **O que não deu tempo:** Sincronização em nuvem das transações de lançamentos via banco de dados remoto (como Firebase Firestore ou Supabase); atualmente, as transações criadas permanecem persistidas na sessão em memória gerenciada pelo Provider durante o ciclo de uso.
+- **O que não deu tempo:** Sincronização em nuvem multi-dispositivo via banco de dados remoto (como Firebase Firestore ou Supabase); atualmente, todos os dados são salvos de forma resiliente e persistente no armazenamento local do dispositivo/navegador.

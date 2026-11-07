@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../components/botao_principal.dart';
 import '../components/cabecalho_gradiente.dart';
 import '../components/campo_email.dart';
 import '../components/campo_senha.dart';
 import '../components/cartao_branco.dart';
+import '../dados/app_dados.dart';
 import '../utils/dimensoes_tela.dart';
 import '../components/mensagens.dart';
 import '../models/usuario.dart';
@@ -39,8 +41,11 @@ class _TelaCadastroState extends State<TelaCadastro> {
     super.dispose();
   }
 
-  // Verifica se já existe alguém com esse e-mail
+  // Verifica se já existe alguém com esse e-mail no banco local ou na lista
   bool emailJaCadastrado(String email) {
+    if (context.read<AppDados>().emailExiste(email)) {
+      return true;
+    }
     for (Usuario usuario in usuariosCadastrados) {
       if (usuario.email.toLowerCase() == email.toLowerCase()) {
         return true;
@@ -61,13 +66,12 @@ class _TelaCadastroState extends State<TelaCadastro> {
     await Future.delayed(const Duration(milliseconds: 400));
     if (!mounted) return;
 
-    setState(() {
-      carregando = false;
-    });
-
     String email = emailController.text.trim();
 
     if (emailJaCadastrado(email)) {
+      setState(() {
+        carregando = false;
+      });
       mostrarMensagemErro(context, 'Este e-mail já está cadastrado!');
       return;
     }
@@ -77,7 +81,12 @@ class _TelaCadastroState extends State<TelaCadastro> {
       email: email,
       senha: senhaController.text,
     );
-    usuariosCadastrados.add(novoUsuario);
+    await context.read<AppDados>().cadastrarUsuario(novoUsuario);
+
+    if (!mounted) return;
+    setState(() {
+      carregando = false;
+    });
 
     mostrarMensagemSucesso(context, 'Cadastro realizado com sucesso! Faça seu login.');
     Navigator.pop(context);
