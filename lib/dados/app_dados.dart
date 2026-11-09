@@ -215,6 +215,11 @@ class AppDados extends ChangeNotifier {
     _bancoDadosLocal.salvarTransacoes(_transacoes);
   }
 
+  Future<void> restaurarTransacoesPadrao() async {
+    _transacoes = await _bancoDadosLocal.restaurarTransacoesPadrao();
+    notifyListeners();
+  }
+
   // Gestão de usuários e login com persistência no banco local
   Usuario? buscarUsuario(String email, String senha) {
     for (final u in _usuarios) {

@@ -28,6 +28,15 @@ void main() {
     expect(dados.favoritos.contains('GBP'), true);
   });
 
+  test('AppDados inicializa com entradas de R\$ 100,00 e saídas de R\$ 32,58', () async {
+    final dados = AppDados();
+    await dados.iniciar();
+
+    expect(dados.totalEntradas, 100.0);
+    expect(dados.totalSaidas, 32.58);
+    expect(double.parse(dados.saldo.toStringAsFixed(2)), 67.42);
+  });
+
   test('AppDados altera favoritos e persiste', () async {
     final dados = AppDados();
     await dados.iniciar();

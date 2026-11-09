@@ -300,7 +300,35 @@ class _TelaPerfilState extends State<TelaPerfil> {
                 ],
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
+
+            // ===== Restaurar Lançamentos Padrão =====
+            OutlinedButton.icon(
+              onPressed: () {
+                mostrarDialogoConfirmacao(
+                  context: context,
+                  titulo: 'Restaurar Lançamentos Padrão?',
+                  mensagem:
+                      'Deseja redefinir os lançamentos para os valores padrão (Entrada: R\$ 100,00 e Saída: R\$ 32,58)?',
+                  textoBotao: 'Restaurar',
+                  aoConfirmar: () {
+                    context.read<AppDados>().restaurarTransacoesPadrao();
+                    mostrarMensagemSucesso(
+                        context, 'Lançamentos redefinidos com sucesso!');
+                  },
+                );
+              },
+              icon: const Icon(Icons.restart_alt_rounded),
+              label: const Text('Restaurar lançamentos padrão (R\$ 100 / R\$ 32,58)'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary, width: 1.2),
+                minimumSize: const Size(64, 50),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+            const SizedBox(height: 12),
 
             // ===== Sair =====
             OutlinedButton.icon(

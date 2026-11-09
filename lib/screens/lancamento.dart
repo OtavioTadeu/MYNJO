@@ -169,6 +169,9 @@ class _TelaLancamentoState extends State<TelaLancamento> {
                     if (valor == null || valor <= 0) {
                       return 'Informe um valor válido maior que zero';
                     }
+                    if (valor > 100000000) {
+                      return 'Valor muito alto (máximo R\$ 100.000.000,00)';
+                    }
                     return null;
                   },
                 ),

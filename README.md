@@ -1,4 +1,4 @@
-# MYNJO Cash 💰
+# MYNJO Cash
 
 Aplicativo de controle financeiro pessoal e acompanhamento de câmbio desenvolvido em Flutter para a disciplina de **Desenvolvimento para Ambientes Móveis (Faculdade COTEMIG 2026.2)**.
 

@@ -7,6 +7,8 @@ class BancoDadosLocal {
   static const String chaveUsuarios = 'banco_usuarios';
   static const String chaveUsuarioLogado = 'banco_usuario_logado';
   static const String chaveTransacoes = 'banco_transacoes';
+  static const String chaveVersaoTransacoes = 'banco_versao_transacoes';
+  static const int versaoTransacoesAtual = 2;
 
   // ===== USUÁRIOS =====
 
@@ -75,6 +77,16 @@ class BancoDadosLocal {
 
   Future<List<Transacao>> carregarTransacoes() async {
     final prefs = await SharedPreferences.getInstance();
+    final versao = prefs.getInt(chaveVersaoTransacoes) ?? 1;
+
+    // Se estiver na versão anterior (ou primeira execução com novos valores padrão de 100 e 32.58), sincroniza
+    if (versao < versaoTransacoesAtual) {
+      await prefs.setInt(chaveVersaoTransacoes, versaoTransacoesAtual);
+      final iniciais = List<Transacao>.from(transacoesExemplo);
+      await salvarTransacoes(iniciais);
+      return iniciais;
+    }
+
     final jsonString = prefs.getString(chaveTransacoes);
 
     if (jsonString == null) {
@@ -95,6 +107,14 @@ class BancoDadosLocal {
     } catch (_) {
       return List<Transacao>.from(transacoesExemplo);
     }
+  }
+
+  Future<List<Transacao>> restaurarTransacoesPadrao() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(chaveVersaoTransacoes, versaoTransacoesAtual);
+    final iniciais = List<Transacao>.from(transacoesExemplo);
+    await salvarTransacoes(iniciais);
+    return iniciais;
   }
 
   Future<void> salvarTransacoes(List<Transacao> transacoes) async {
